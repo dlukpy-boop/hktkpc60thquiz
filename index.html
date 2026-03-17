@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>波記知多少問答遊戲</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;700;900&family=Noto+Serif+HK:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:  #1a2a5e;
+    --red:   #c0272d;
+    --gold:  #c9a84c;
+    --gold2: #f0d080;
+    --bg:    #0e1830;
+    --card:  #162040;
+    --text:  #f5f0e8;
+    --muted: #8890b0;
+    --correct: #2ecc71;
+    --wrong:   #e74c3c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans HK', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* GIF background — start screen only */
+  #gifBg {
+    position: fixed; inset: 0;
+    background: url('quizbg.gif') center center / cover no-repeat;
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+    z-index: 0;
+  }
+  #gifBg.show { opacity: 1; }
+
+  /* Dark overlay for quiz/result screens */
+  #darkBg {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+    z-index: 0;
+  }
+  #darkBg.show { opacity: 1; }
+
+  /* Gold orbs for quiz screen */
+  .bg-orb {
+    position: fixed; border-radius: 50%;
+    filter: blur(90px); opacity: 0; pointer-events: none;
+    transition: opacity 0.8s;
+    z-index: 0;
+  }
+  .bg-orb.a { width: 350px; height: 350px; background: var(--navy);  top: -80px;  left: -80px; }
+  .bg-orb.b { width: 300px; height: 300px; background: var(--red);   bottom: -60px; right: -60px; }
+  .bg-orb.c { width: 220px; height: 220px; background: var(--gold);  top: 40%; left: 40%; }
+  .bg-orb.show { opacity: 0.25; }
+
+  /* Screens */
+  .screen { display: none; width: 100%; max-width: 700px; padding: 32px 24px; position: relative; z-index: 1; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; animation: fadeUp 0.5s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── START SCREEN ── */
+  #startScreen {
+    justify-content: flex-end;
+    padding-bottom: 80px;
+  }
+  .btn-start {
+    background: linear-gradient(135deg, var(--red) 0%, #8b1a1e 100%);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 18px 64px;
+    font-size: 1.3rem;
+    font-weight: 900;
+    font-family: 'Noto Sans HK', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 6px 28px rgba(192,39,45,0.45);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-start::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--red) 100%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .btn-start:hover::before { opacity: 0.3; }
+  .btn-start:active { transform: scale(0.96); }
+  .btn-start span { position: relative; }
+
+  /* ── QUIZ SCREEN ── */
+  .quiz-header {
+    width: 100%; display: flex;
+    justify-content: space-between; align-items: center;
+    margin-bottom: 20px; gap: 12px;
+  }
+  .progress-wrap { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--red), var(--gold)); border-radius: 99px; transition: width 0.5s ease; }
+  .q-counter { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+  .score-badge {
+    background: rgba(201,168,76,0.15);
+    border: 1px solid rgba(201,168,76,0.35);
+    border-radius: 100px; padding: 6px 16px;
+    font-size: 0.88rem; color: var(--gold); font-weight: 700; white-space: nowrap;
+  }
+
+  /* Timer */
+  .timer-ring-wrap { position: relative; width: 54px; height: 54px; flex-shrink: 0; }
+  .timer-ring-wrap svg { transform: rotate(-90deg); }
+  .timer-track { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 4; }
+  .timer-fill  { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+  .timer-text  { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 0.95rem; font-weight: 700; color: var(--gold); }
+
+  .question-card {
+    background: var(--card);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 22px; padding: 28px 28px 24px;
+    width: 100%; margin-bottom: 20px; position: relative; overflow: hidden;
+  }
+  .question-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--gold));
+  }
+  .q-num { font-size: 0.75rem; color: var(--gold); font-weight: 700; letter-spacing: 2px; margin-bottom: 10px; text-transform: uppercase; }
+  .q-text { font-size: clamp(1.05rem, 3.2vw, 1.3rem); font-weight: 700; line-height: 1.55; }
+
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+  @media (max-width: 480px) { .options-grid { grid-template-columns: 1fr; } }
+
+  .option-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 14px; padding: 16px 18px;
+    font-size: clamp(0.9rem, 2.4vw, 1rem);
+    font-family: 'Noto Sans HK', sans-serif;
+    color: var(--text); cursor: pointer; text-align: left;
+    transition: all 0.2s; display: flex; align-items: center; gap: 12px;
+  }
+  .option-btn:not(:disabled):hover { border-color: var(--gold); background: rgba(201,168,76,0.08); transform: translateY(-2px); }
+  .option-btn:not(:disabled):active { transform: scale(0.97); }
+  .opt-label {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 0.82rem; flex-shrink: 0; transition: all 0.2s;
+  }
+  .option-btn.correct { background: rgba(46,204,113,0.15); border-color: var(--correct); animation: popIn 0.3s ease; }
+  .option-btn.correct .opt-label { background: var(--correct); color: #fff; }
+  .option-btn.wrong   { background: rgba(231,76,60,0.15);  border-color: var(--wrong);  animation: shake 0.4s ease; }
+  .option-btn.wrong .opt-label   { background: var(--wrong);   color: #fff; }
+  .option-btn:disabled { cursor: not-allowed; }
+
+  @keyframes popIn { 0%{transform:scale(1)} 50%{transform:scale(1.04)} 100%{transform:scale(1)} }
+  @keyframes shake  { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 60%{transform:translateX(6px)} }
+
+  /* Feedback */
+  .feedback-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 100; opacity: 0; }
+  .feedback-overlay.show { animation: feedbackPop 0.8s ease forwards; }
+  .feedback-icon { font-size: 8rem; filter: drop-shadow(0 0 40px currentColor); }
+  @keyframes feedbackPop { 0%{opacity:0;transform:scale(0.5)} 30%{opacity:1;transform:scale(1.2)} 70%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(1)} }
+
+  /* Confetti */
+  .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 200; }
+  .confetti-piece { position: absolute; width: 10px; height: 10px; border-radius: 2px; animation: confettiFall linear forwards; }
+  @keyframes confettiFall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+
+  /* ── RESULT SCREEN ── */
+  .result-circle {
+    width: 156px; height: 156px; border-radius: 50%;
+    border: 5px solid var(--gold);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 20px 0;
+    box-shadow: 0 0 60px rgba(201,168,76,0.3), inset 0 0 40px rgba(201,168,76,0.05);
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  @keyframes glow { from{box-shadow:0 0 40px rgba(201,168,76,0.2)} to{box-shadow:0 0 80px rgba(201,168,76,0.5)} }
+  .result-score { font-family: 'Noto Serif HK', serif; font-size: 3.2rem; color: var(--gold); font-weight: 900; }
+  .result-total { font-size: 0.95rem; color: var(--muted); }
+  .result-msg  { font-size: 1.5rem; font-weight: 900; margin-bottom: 8px; text-align: center; }
+  .result-sub  { font-size: 1rem; color: var(--muted); margin-bottom: 36px; text-align: center; }
+  .btn-retry {
+    background: transparent; color: var(--gold);
+    border: 2px solid var(--gold); border-radius: 50px;
+    padding: 14px 48px; font-size: 1.05rem; font-weight: 700;
+    font-family: 'Noto Sans HK', sans-serif; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-retry:hover { background: var(--gold); color: #0e1830; }
+</style>
+</head>
+<body>
+
+<div id="gifBg" class="show"></div>
+<div id="darkBg"></div>
+<div class="bg-orb a" id="orbA"></div>
+<div class="bg-orb b" id="orbB"></div>
+<div class="bg-orb c" id="orbC"></div>
+
+<div class="feedback-overlay" id="feedbackOverlay"><div class="feedback-icon" id="feedbackIcon"></div></div>
+<div class="confetti-container" id="confettiContainer"></div>
+
+<!-- START SCREEN -->
+<div class="screen active" id="startScreen">
+  <button class="btn-start" onclick="startQuiz()"><span>開始挑戰</span></button>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div class="screen" id="quizScreen">
+  <div class="quiz-header">
+    <div class="q-counter" id="qCounter">1 / 10</div>
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:10%"></div></div>
+    <div class="timer-ring-wrap">
+      <svg width="54" height="54" viewBox="0 0 54 54">
+        <circle class="timer-track" cx="27" cy="27" r="23"/>
+        <circle class="timer-fill" id="timerRing" cx="27" cy="27" r="23" stroke-dasharray="144.5" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-text" id="timerText">15</div>
+    </div>
+    <div class="score-badge">分數 <span id="scoreDisplay">0</span></div>
+  </div>
+  <div class="question-card">
+    <div class="q-num" id="qNum">問題 01</div>
+    <div class="q-text" id="qText">載入中...</div>
+  </div>
+  <div class="options-grid" id="optionsGrid"></div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div class="screen" id="resultScreen">
+  <div class="result-msg" id="resultMsg">🎉 出色表現！</div>
+  <div class="result-circle">
+    <div class="result-score" id="resultScore">0</div>
+    <div class="result-total" id="resultTotal">/ 0 題</div>
+  </div>
+  <div class="result-sub" id="resultSub"></div>
+  <button class="btn-retry" onclick="restartQuiz()">再玩一次</button>
+</div>
+
+<script>
+// ============================================================
+// 📝 題目資料 — 換成你自己嘅學校題目！
+// ============================================================
+const QUESTIONS = [
+  {
+    q: "鄧鏡波書院係由邊個宗教團體創辦？",
+    options: ["天主教慈幼會", "基督教聖公會", "伊斯蘭教團體", "佛教慈善機構"],
+    answer: 0
+  },
+  {
+    q: "鄧鏡波書院喺邊年創校？",
+    options: ["1950年", "1955年", "1963年", "1968年"],
+    answer: 2
+  },
+  {
+    q: "鄧鏡波書院嘅校訓係？",
+    options: ["知識就是力量", "愛主愛人", "敬業樂群", "誠信勤勉"],
+    answer: 1
+  },
+  {
+    q: "鄧鏡波書院位於香港邊區？",
+    options: ["九龍城區", "油尖旺區", "深水埗區", "黃大仙區"],
+    answer: 1
+  },
+  {
+    q: "慈幼會係由邊位聖人創辦？",
+    options: ["聖方濟各", "聖若望鮑思高", "聖依納爵", "聖道明"],
+    answer: 1
+  },
+  {
+    q: "以下邊個係學校嘅英文名稱縮寫？",
+    options: ["DKPS", "HKDB", "DKBS", "HKDKB"],
+    answer: 2
+  },
+  {
+    q: "今年係鄧鏡波書院幾週年校慶？",
+    options: ["50週年", "55週年", "60週年", "65週年"],
+    answer: 2
+  },
+  {
+    q: "鄧鏡波書院係男校、女校定係男女校？",
+    options: ["女校", "男校", "男女校", "視乎年級"],
+    answer: 1
+  },
+  {
+    q: "慈幼會嘅創辦人聖若望鮑思高係邊個國家人？",
+    options: ["法國", "西班牙", "意大利", "葡萄牙"],
+    answer: 2
+  },
+  {
+    q: "鄧鏡波書院嘅校色包括以下邊種顏色？",
+    options: ["紫色同白色", "藍色同金色", "綠色同銀色", "橙色同黑色"],
+    answer: 1
+  }
+];
+// ============================================================
+
+const TIME_PER_Q  = 15;
+const CIRCUMFERENCE = 144.5;
+
+let currentQ = 0, score = 0, timer = null, timeLeft = TIME_PER_Q, answered = false;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const isStart = id === 'startScreen';
+  document.getElementById('gifBg').classList.toggle('show', isStart);
+  document.getElementById('darkBg').classList.toggle('show', !isStart);
+  ['orbA','orbB','orbC'].forEach(o => document.getElementById(o).classList.toggle('show', !isStart));
+}
+
+function startQuiz() {
+  currentQ = 0; score = 0;
+  showScreen('quizScreen');
+  loadQuestion();
+}
+
+function loadQuestion() {
+  answered = false;
+  const q = QUESTIONS[currentQ];
+  const total = QUESTIONS.length;
+  document.getElementById('qCounter').textContent = `${currentQ + 1} / ${total}`;
+  document.getElementById('progressBar').style.width = `${((currentQ + 1) / total) * 100}%`;
+  document.getElementById('qNum').textContent = `問題 ${String(currentQ + 1).padStart(2, '0')}`;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('scoreDisplay').textContent = score;
+
+  const grid = document.getElementById('optionsGrid');
+  grid.innerHTML = '';
+  ['A','B','C','D'].forEach((lbl, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="opt-label">${lbl}</span><span>${q.options[i]}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    grid.appendChild(btn);
+  });
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timer);
+  timeLeft = TIME_PER_Q;
+  updateTimer();
+  timer = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) { clearInterval(timer); if (!answered) timeUp(); }
+  }, 1000);
+}
+
+function updateTimer() {
+  const ring = document.getElementById('timerRing');
+  const text = document.getElementById('timerText');
+  const ratio = timeLeft / TIME_PER_Q;
+  ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - ratio);
+  ring.style.stroke = timeLeft <= 5 ? '#e74c3c' : timeLeft <= 8 ? '#c9a84c' : '#c9a84c';
+  text.textContent = timeLeft;
+  text.style.color = timeLeft <= 5 ? '#e74c3c' : '#c9a84c';
+}
+
+function timeUp() {
+  answered = true; disableOptions(); highlightCorrect();
+  showFeedback(false);
+  setTimeout(nextQuestion, 1500);
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true; clearInterval(timer);
+  const correct = QUESTIONS[currentQ].answer;
+  const isCorrect = idx === correct;
+  const btns = document.querySelectorAll('.option-btn');
+  btns[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) btns[correct].classList.add('correct');
+  disableOptions();
+  if (isCorrect) {
+    score += Math.max(10, Math.round(timeLeft / TIME_PER_Q * 50) + 10);
+    showFeedback(true); launchConfetti();
+  } else {
+    showFeedback(false);
+  }
+  document.getElementById('scoreDisplay').textContent = score;
+  setTimeout(nextQuestion, 1500);
+}
+
+function highlightCorrect() {
+  document.querySelectorAll('.option-btn')[QUESTIONS[currentQ].answer].classList.add('correct');
+}
+function disableOptions() {
+  document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+}
+
+function showFeedback(ok) {
+  const o = document.getElementById('feedbackOverlay');
+  document.getElementById('feedbackIcon').textContent = ok ? '✅' : '❌';
+  o.className = 'feedback-overlay show';
+  setTimeout(() => o.className = 'feedback-overlay', 800);
+}
+
+function launchConfetti() {
+  const container = document.getElementById('confettiContainer');
+  const colors = ['#c9a84c','#f0d080','#c0272d','#1a2a5e','#fff'];
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDuration = (Math.random() * 1.5 + 1) + 's';
+    p.style.animationDelay = Math.random() * 0.5 + 's';
+    p.style.transform = `rotate(${Math.random() * 360}deg)`;
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 2500);
+  }
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= QUESTIONS.length) showResult();
+  else loadQuestion();
+}
+
+function showResult() {
+  const total = QUESTIONS.length;
+  const maxScore = total * 60;
+  const pct = score / maxScore;
+  document.getElementById('resultScore').textContent = score;
+  document.getElementById('resultTotal').textContent = `/ ${total} 題`;
+  let msg, sub;
+  if (pct >= 0.85) { msg = '🏆 波記達人！'; sub = '你對母校瞭如指掌，真係校友之光！'; launchConfetti(); setTimeout(launchConfetti, 700); }
+  else if (pct >= 0.6) { msg = '🎉 表現出色！'; sub = '對學校認識頗深，繼續加油！'; }
+  else if (pct >= 0.4) { msg = '💪 不錯喔！';  sub = '再溫習一下學校歷史，下次更好！'; }
+  else                  { msg = '📖 多了解母校！'; sub = '慢慢認識學校，一定會愛上佢！'; }
+  document.getElementById('resultMsg').textContent = msg;
+  document.getElementById('resultSub').textContent = sub;
+  showScreen('resultScreen');
+}
+
+function restartQuiz() { startQuiz(); }
+</script>
+</body>
+</html>
