@@ -22,9 +22,10 @@
     min-height:100vh; display:flex; align-items:center; justify-content:center;
     overflow:hidden; position:relative;
   }
-  #gifBg { position:fixed; inset:0; background:url('bg01.gif') center/cover no-repeat; opacity:0; transition:opacity .5s; pointer-events:none; z-index:0; }
-  #gifBg.show { opacity:1; }
-  #darkBg { position:fixed; inset:0; background:var(--bg); opacity:0; transition:opacity .5s; pointer-events:none; z-index:0; }
+  #gifBg { position:fixed; inset:0; background:url('bg01.gif') center/cover no-repeat; opacity:0; transition:opacity .5s, filter .5s; pointer-events:none; z-index:0; }
+  #gifBg.show { opacity:1; filter:none; }
+  #gifBg.dim  { opacity:0.4; filter:blur(2px); }
+  #darkBg { position:fixed; inset:0; background:rgba(10,15,30,0.55); opacity:0; transition:opacity .5s; pointer-events:none; z-index:0; }
   #darkBg.show { opacity:1; }
   .bg-orb { position:fixed; border-radius:50%; filter:blur(90px); opacity:0; pointer-events:none; transition:opacity .8s; z-index:0; }
   .bg-orb.a { width:350px; height:350px; background:var(--navy); top:-80px; left:-80px; }
@@ -497,7 +498,10 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   const isStart = id === 'startScreen';
-  document.getElementById('gifBg').classList.toggle('show', isStart);
+  const gifBg = document.getElementById('gifBg');
+  gifBg.classList.remove('show', 'dim');
+  if (isStart) gifBg.classList.add('show');
+  else gifBg.classList.add('dim');
   document.getElementById('darkBg').classList.toggle('show', !isStart);
   ['orbA','orbB','orbC'].forEach(o => document.getElementById(o).classList.toggle('show', !isStart));
 }
@@ -518,7 +522,6 @@ function loadQuestion() {
   const newGrid = document.createElement('div');
   newGrid.id = 'optionsGrid';
   oldGrid.replaceWith(newGrid);
-
   const q = gameQuestions[currentQ];
   document.getElementById('progressBar').style.width = `${((currentQ+1)/QUESTIONS_PER_GAME)*100}%`;
   document.getElementById('qNum').textContent = `問題 ${String(currentQ+1).padStart(2,'0')} / ${QUESTIONS_PER_GAME}`;
@@ -674,6 +677,9 @@ function timeUp() {
 }
 
 function nextQuestion() {
+  // immediately wipe grid to prevent colour bleed
+  const grid = document.getElementById('optionsGrid');
+  if (grid) { grid.className = ''; grid.innerHTML = ''; }
   currentQ++;
   if (currentQ >= QUESTIONS_PER_GAME) showResult();
   else loadQuestion();
@@ -755,9 +761,19 @@ function clearScores() {
 }
 
 function exitQuiz() { document.getElementById('exitModal').style.display='flex'; }
-function confirmExit() { closeExitModal(); clearInterval(timer); showScreen('startScreen'); }
+function confirmExit() {
+  closeExitModal();
+  clearInterval(timer);
+  document.getElementById('mascotPopup').classList.remove('show');
+  const grid = document.getElementById('optionsGrid');
+  grid.className = ''; grid.innerHTML = '';
+  showScreen('startScreen');
+}
 function closeExitModal() { document.getElementById('exitModal').style.display='none'; }
-function restartQuiz() { startQuiz(); }
+function restartQuiz() { 
+  document.getElementById('mascotPopup').classList.remove('show');
+  startQuiz(); 
+}
 </script>
 </body>
 </html>
