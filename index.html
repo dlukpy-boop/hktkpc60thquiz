@@ -185,18 +185,24 @@
     width: 280px;
     height: 280px;
     border-radius: 50%;
-    overflow: hidden;
     background: #b8d4d8;
     box-shadow:
       0 0 0 4px rgba(201,168,76,0.5),
       0 0 18px 8px rgba(201,168,76,0.35),
       0 0 40px 16px rgba(201,168,76,0.15),
       0 12px 40px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
   }
   .mascot-popup img {
-    width: 100%; height: 100%;
-    object-fit: cover; object-position: center top;
-    display: block; border-radius: 50%;
+    width: 130%;
+    height: 130%;
+    object-fit: contain;
+    object-position: center bottom;
+    display: block;
+    border-radius: 0;
   }
 
   /* FEEDBACK MASCOT - centre screen */
@@ -208,10 +214,19 @@
     z-index: 150;
     pointer-events: none;
     border-radius: 50%;
-    overflow: hidden;
     background: #e8e8e8;
     box-shadow: 0 0 0 6px rgba(255,255,255,0.3), 0 20px 60px rgba(0,0,0,0.5);
     opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+  }
+  .feedback-mascot img {
+    width: 130%;
+    height: 130%;
+    object-fit: contain;
+    object-position: center bottom;
   }
   .feedback-mascot.show {
     animation: feedbackMascotPop 1.5s ease forwards;
