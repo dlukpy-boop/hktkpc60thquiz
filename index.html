@@ -526,6 +526,16 @@ function loadQuestion() {
   } else {
     renderTextOptions(q);
   }
+
+  // show mascot with every question
+  const mascot = document.getElementById('mascotPopup');
+  const img = mascot.querySelector('img');
+  img.src = Math.random() < 0.5 ? 'pop01.gif' : 'pop02.gif';
+  mascot.classList.remove('left', 'right', 'show');
+  void mascot.offsetWidth;
+  mascot.classList.add(Math.random() < 0.5 ? 'left' : 'right');
+  setTimeout(() => mascot.classList.add('show'), 20);
+
   startTimer();
 }
 
@@ -541,10 +551,9 @@ function renderTextOptions(q) {
     opts = all; correctIdx = q._correctIdx;
   }
 
-  const grid = document.createElement('div');
+  const grid = document.getElementById('optionsGrid');
   grid.className = 'options-grid';
-  grid.id = 'optionsGrid';
-  document.getElementById('optionsGrid').replaceWith(grid);
+  grid.innerHTML = '';
 
   ['A','B','C','D'].forEach((lbl,i) => {
     const btn = document.createElement('button');
@@ -556,12 +565,11 @@ function renderTextOptions(q) {
 }
 
 function renderPhotoOptions(q) {
-  const grid = document.createElement('div');
+  const grid = document.getElementById('optionsGrid');
   grid.className = 'photo-grid';
-  grid.id = 'optionsGrid';
-  document.getElementById('optionsGrid').replaceWith(grid);
+  grid.innerHTML = '';
 
-  q.opts.forEach((teacher, i) => {
+  q.opts.forEach((teacher) => {
     const btn = document.createElement('button');
     btn.className = 'photo-btn';
     btn.dataset.tid = teacher.id;
@@ -579,6 +587,7 @@ function renderPhotoOptions(q) {
 function selectTextAnswer(idx, correctIdx) {
   if (answered) return;
   answered = true; clearInterval(timer);
+  document.getElementById('mascotPopup').classList.remove('show');
   const isCorrect = Array.isArray(correctIdx) ? correctIdx.includes(idx) : idx === correctIdx;
   const firstCorrect = Array.isArray(correctIdx) ? correctIdx[0] : correctIdx;
   const btns = document.querySelectorAll('.option-btn');
@@ -594,6 +603,7 @@ function selectTextAnswer(idx, correctIdx) {
 function selectPhotoAnswer(tid, q) {
   if (answered) return;
   answered = true; clearInterval(timer);
+  document.getElementById('mascotPopup').classList.remove('show');
   const isCorrect = tid === q.correctId;
 
   // Reveal all names/subjects + apply correct/wrong/revealed classes
@@ -636,6 +646,7 @@ function updateTimer() {
 
 function timeUp() {
   answered = true;
+  document.getElementById('mascotPopup').classList.remove('show');
   if (isTeacherQ) {
     const q = gameQuestions[currentQ];
     document.querySelectorAll('.photo-btn').forEach(btn => {
@@ -668,18 +679,6 @@ function showFeedback(ok) {
   document.getElementById('feedbackIcon').textContent = ok ? '✅' : '❌';
   o.className = 'feedback-overlay show';
   setTimeout(() => o.className = 'feedback-overlay', 800);
-
-  if (ok) {
-    const mascot = document.getElementById('mascotPopup');
-    const img = mascot.querySelector('img');
-    // random GIF + random side
-    img.src = Math.random() < 0.5 ? 'pop01.gif' : 'pop02.gif';
-    mascot.classList.remove('left', 'right', 'show');
-    void mascot.offsetWidth;
-    mascot.classList.add(Math.random() < 0.5 ? 'left' : 'right');
-    setTimeout(() => mascot.classList.add('show'), 20);
-    setTimeout(() => mascot.classList.remove('show'), 1800);
-  }
 }
 
 function launchConfetti() {
