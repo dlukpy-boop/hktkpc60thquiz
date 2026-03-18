@@ -173,18 +173,74 @@
     position: fixed;
     bottom: -250px;
     width: 140px;
+    height: 140px;
     z-index: 999;
     pointer-events: none;
-    transition: bottom 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: bottom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   .mascot-popup.left  { left: 12px; }
   .mascot-popup.right { right: 12px; }
   .mascot-popup.show  { bottom: 25%; }
-  .mascot-popup img {
-    width: 100%;
+  .mascot-popup .mascot-circle {
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    overflow: hidden;
+    background: #b8d4d8;
+    box-shadow:
+      0 0 0 4px rgba(201,168,76,0.5),
+      0 0 18px 8px rgba(201,168,76,0.35),
+      0 0 40px 16px rgba(201,168,76,0.15),
+      0 12px 40px rgba(0,0,0,0.5);
   }
+  .mascot-popup img {
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: center;
+    display: block; border-radius: 50%;
+  }
+
+  /* entrance animations */
+  @keyframes entranceBounce {
+    0%   { transform: scale(0.3) rotate(-15deg); opacity:0; }
+    50%  { transform: scale(1.2) rotate(5deg);   opacity:1; }
+    75%  { transform: scale(0.95) rotate(-2deg); }
+    100% { transform: scale(1) rotate(0deg);     opacity:1; }
+  }
+  @keyframes entranceSpin {
+    0%   { transform: scale(0) rotate(-360deg); opacity:0; }
+    70%  { transform: scale(1.1) rotate(10deg); opacity:1; }
+    100% { transform: scale(1) rotate(0deg);    opacity:1; }
+  }
+  @keyframes entranceZoom {
+    0%   { transform: scale(0); opacity:0; }
+    60%  { transform: scale(1.25); opacity:1; }
+    100% { transform: scale(1);    opacity:1; }
+  }
+  @keyframes entranceWobble {
+    0%   { transform: scale(0.5) translateY(30px); opacity:0; }
+    40%  { transform: scale(1.1) translateY(-10px); opacity:1; }
+    60%  { transform: scale(0.95) translateY(5px); }
+    80%  { transform: scale(1.03) translateY(-3px); }
+    100% { transform: scale(1) translateY(0);       opacity:1; }
+  }
+  @keyframes entranceFlip {
+    0%   { transform: perspective(400px) rotateY(90deg) scale(0.5); opacity:0; }
+    60%  { transform: perspective(400px) rotateY(-10deg) scale(1.05); opacity:1; }
+    100% { transform: perspective(400px) rotateY(0deg) scale(1);     opacity:1; }
+  }
+  @keyframes entranceSling {
+    0%   { transform: scale(1.8) translateY(-40px); opacity:0; }
+    50%  { transform: scale(0.85) translateY(10px);  opacity:1; }
+    75%  { transform: scale(1.05) translateY(-4px); }
+    100% { transform: scale(1) translateY(0);        opacity:1; }
+  }
+
+  .mascot-anim-bounce  .mascot-circle { animation: entranceBounce 0.65s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  .mascot-anim-spin    .mascot-circle { animation: entranceSpin   0.7s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  .mascot-anim-zoom    .mascot-circle { animation: entranceZoom   0.55s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  .mascot-anim-wobble  .mascot-circle { animation: entranceWobble 0.8s ease forwards; }
+  .mascot-anim-flip    .mascot-circle { animation: entranceFlip   0.65s ease forwards; }
+  .mascot-anim-sling   .mascot-circle { animation: entranceSling  0.6s ease forwards; }
 
   /* FEEDBACK */
   .feedback-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:100; opacity:0; }
@@ -241,7 +297,9 @@
 <div class="bg-orb b" id="orbB"></div>
 <div class="bg-orb c" id="orbC"></div>
 <div class="mascot-popup" id="mascotPopup">
-  <img src="pop01.gif" alt="吉祥物">
+  <div class="mascot-circle">
+    <img src="pop01.gif" alt="吉祥物">
+  </div>
 </div>
 
 <div class="feedback-overlay" id="feedbackOverlay"><div class="feedback-icon" id="feedbackIcon"></div></div>
@@ -535,13 +593,15 @@ function loadQuestion() {
     renderTextOptions(q);
   }
 
-  // show mascot with every question
   const mascot = document.getElementById('mascotPopup');
   const img = mascot.querySelector('img');
   img.src = Math.random() < 0.5 ? 'pop01.gif' : 'pop02.gif';
-  mascot.classList.remove('left', 'right', 'show');
+  const anims = ['bounce','spin','zoom','wobble','flip','sling'];
+  const anim = anims[Math.floor(Math.random() * anims.length)];
+  mascot.className = 'mascot-popup';
   void mascot.offsetWidth;
   mascot.classList.add(Math.random() < 0.5 ? 'left' : 'right');
+  mascot.classList.add(`mascot-anim-${anim}`);
   setTimeout(() => mascot.classList.add('show'), 20);
 
   startTimer();
@@ -595,7 +655,7 @@ function renderPhotoOptions(q) {
 function selectTextAnswer(idx, correctIdx) {
   if (answered) return;
   answered = true; clearInterval(timer);
-  document.getElementById('mascotPopup').classList.remove('show');
+  document.getElementById('mascotPopup').className = 'mascot-popup';
   const isCorrect = Array.isArray(correctIdx) ? correctIdx.includes(idx) : idx === correctIdx;
   const firstCorrect = Array.isArray(correctIdx) ? correctIdx[0] : correctIdx;
   const btns = document.querySelectorAll('.option-btn');
@@ -605,13 +665,16 @@ function selectTextAnswer(idx, correctIdx) {
   if (isCorrect) { score += Math.max(10, Math.round(timeLeft/TIME_PER_Q*50)+10); showFeedback(true); launchConfetti(); }
   else showFeedback(false);
   document.getElementById('scoreDisplay').textContent = score;
-  setTimeout(nextQuestion, 1500);
+  setTimeout(() => {
+    btns.forEach(b => { b.classList.remove('correct','wrong'); b.className = 'option-btn'; });
+    nextQuestion();
+  }, 1500);
 }
 
 function selectPhotoAnswer(tid, q) {
   if (answered) return;
   answered = true; clearInterval(timer);
-  document.getElementById('mascotPopup').classList.remove('show');
+  document.getElementById('mascotPopup').className = 'mascot-popup';
   const isCorrect = tid === q.correctId;
 
   // Reveal all names/subjects + apply correct/wrong/revealed classes
@@ -654,7 +717,7 @@ function updateTimer() {
 
 function timeUp() {
   answered = true;
-  document.getElementById('mascotPopup').classList.remove('show');
+  document.getElementById('mascotPopup').className = 'mascot-popup';
   if (isTeacherQ) {
     const q = gameQuestions[currentQ];
     document.querySelectorAll('.photo-btn').forEach(btn => {
@@ -666,12 +729,15 @@ function timeUp() {
     });
     document.getElementById('btnNext').style.display = 'block';
   } else {
-    document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
-    // highlight first correct
+    const btns = document.querySelectorAll('.option-btn');
+    btns.forEach(b => b.disabled = true);
     const q = gameQuestions[currentQ];
     const ci = q.multiPool ? q._correctIdx : (Array.isArray(q.answer) ? q.answer[0] : q.answer);
-    document.querySelectorAll('.option-btn')[ci]?.classList.add('correct');
-    setTimeout(nextQuestion, 1500);
+    btns[ci]?.classList.add('correct');
+    setTimeout(() => {
+      btns.forEach(b => { b.classList.remove('correct','wrong'); b.className = 'option-btn'; });
+      nextQuestion();
+    }, 1500);
   }
   showFeedback(false);
 }
@@ -690,6 +756,18 @@ function showFeedback(ok) {
   document.getElementById('feedbackIcon').textContent = ok ? '✅' : '❌';
   o.className = 'feedback-overlay show';
   setTimeout(() => o.className = 'feedback-overlay', 800);
+
+  // show answer mascot
+  const mascot = document.getElementById('mascotPopup');
+  const img = mascot.querySelector('img');
+  img.src = ok ? 'correct.gif' : 'wrong.gif';
+  const anims = ['bounce','spin','zoom','wobble','flip','sling'];
+  const anim = anims[Math.floor(Math.random() * anims.length)];
+  mascot.className = 'mascot-popup';
+  void mascot.offsetWidth;
+  mascot.classList.add(Math.random() < 0.5 ? 'left' : 'right');
+  mascot.classList.add(`mascot-anim-${anim}`);
+  setTimeout(() => mascot.classList.add('show'), 20);
 }
 
 function launchConfetti() {
@@ -712,13 +790,12 @@ function showResult() {
   document.getElementById('resultScore').textContent = score;
   document.getElementById('resultTotal').textContent = `/ ${QUESTIONS_PER_GAME} 題`;
   let msg, sub, img;
-  if (score>=450)      { msg='🏆 S級 波記達人！'; sub='你對母校瞭如指掌，校友之光！'; img='levelS.gif'; launchConfetti(); setTimeout(launchConfetti,700); }
-  else if (score>=350) { msg='🌟 A級 表現出色！'; sub='對學校認識頗深，繼續加油！'; img='levelA.gif'; }
-  else if (score>=250) { msg='👍 B級 不錯喔！'; sub='再溫習一下學校歷史，下次更好！'; img='levelB.gif'; }
-  else if (score>=150) { msg='💪 C級 繼續努力！'; sub='多啲認識學校，你可以做到！'; img='levelC.gif'; }
-  else                  { msg='📖 D級 多了解母校！'; sub='慢慢認識學校，一定會愛上佢！'; img='levelD.gif'; }
+  if (score>=450)      { msg='🏆 波記達人！';    img='levelS.gif'; launchConfetti(); setTimeout(launchConfetti,700); }
+  else if (score>=300) { msg='📚 波記資優生！';  img='levelA.gif'; }
+  else if (score>=150) { msg='✏️ 波記新生！';    img='levelB.gif'; }
+  else                  { msg='😅 波記仔留班了！'; img='levelC.gif'; }
   document.getElementById('resultMsg').textContent = msg;
-  document.getElementById('resultSub').textContent = sub;
+  document.getElementById('resultSub').textContent = '';
   const imgEl = document.getElementById('resultLevelImg');
   imgEl.src = img; imgEl.style.display = 'flex';
   document.getElementById('nameInput').value = '';
@@ -764,16 +841,33 @@ function exitQuiz() { document.getElementById('exitModal').style.display='flex';
 function confirmExit() {
   closeExitModal();
   clearInterval(timer);
-  document.getElementById('mascotPopup').classList.remove('show');
+  document.getElementById('mascotPopup').className = 'mascot-popup';
   const grid = document.getElementById('optionsGrid');
   grid.className = ''; grid.innerHTML = '';
   showScreen('startScreen');
 }
 function closeExitModal() { document.getElementById('exitModal').style.display='none'; }
 function restartQuiz() { 
-  document.getElementById('mascotPopup').classList.remove('show');
+  document.getElementById('mascotPopup').className = 'mascot-popup';
   startQuiz(); 
 }
+
+// ── Preload all images on page load ──
+window.addEventListener('load', () => {
+  const files = [
+    'quizbg.gif','bg01.gif',
+    'pop01.gif','pop02.gif','correct.gif','wrong.gif','quitwarn.png',
+    'levelS.gif','levelA.gif','levelB.gif','levelC.gif','levelD.gif',
+    'bn_start.png','bn_chart.png',
+    't01.jpg','t02.jpg','t03.jpg','t04.jpg','t05.jpg','t06.jpg',
+    't07.jpg','t08.jpg','t09.jpg','t10.jpg','t11.jpg','t12.jpg',
+  ];
+  files.forEach(src => {
+    const el = src.endsWith('.gif') || src.endsWith('.png') || src.endsWith('.jpg')
+      ? new Image() : new Image();
+    el.src = src;
+  });
+});
 </script>
 </body>
 </html>
