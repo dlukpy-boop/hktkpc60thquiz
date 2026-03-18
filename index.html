@@ -47,8 +47,62 @@ background:none; border:none; padding:0; cursor:pointer;
 }
 #startScreen .btn-leaderboard img { width:130px; display:block; }
 
+/* WIN98 WINDOW */
+.win98-window {
+width: 100%;
+border: 2px solid #fff;
+border-right-color: #808080;
+border-bottom-color: #808080;
+box-shadow: 1px 1px 0 #000, inset 1px 1px 0 #dfdfdf;
+background: #c0c0c0;
+}
+.win98-titlebar {
+background: linear-gradient(90deg, #000080, #1084d0);
+padding: 4px 6px;
+display: flex; align-items: center; justify-content: space-between;
+user-select: none;
+}
+.win98-title {
+color: #fff; font-size: .82rem; font-weight: 700;
+font-family: ‘Noto Sans HK’, sans-serif; letter-spacing: 0.5px;
+}
+.win98-btns { display: flex; gap: 2px; }
+.win98-btn {
+background: #c0c0c0;
+border: 1px solid #fff; border-right-color: #808080; border-bottom-color: #808080;
+width: 22px; height: 20px; font-size: .75rem; cursor: pointer;
+display: flex; align-items: center; justify-content: center;
+color: #000; font-family: monospace;
+}
+.win98-close { font-weight: 900; }
+.win98-close:hover { background: #e74c3c; color: #fff; }
+.win98-body { padding: 12px; background: #c0c0c0; }
+
+/* override card colours inside win98 */
+.win98-body .question-card { background: #fff; border: 2px inset #808080; border-radius: 0; }
+.win98-body .question-card::before { display: none; }
+.win98-body .q-num { color: #000080; }
+.win98-body .q-text { color: #000; }
+.win98-body .score-badge { border-color: #808080; color: #000080; background: #fff; }
+.win98-body .option-btn { background: #fff; border: 2px outset #c0c0c0; border-radius: 0; color: #000; }
+.win98-body .option-btn:not(:disabled):hover { background: #000080; color: #fff; border-color: #000080; transform: none; }
+.win98-body .option-btn .opt-label { background: #c0c0c0; color: #000; border-radius: 0; }
+.win98-body .option-btn.correct { background: #008000; color: #fff; border-color: #006000; }
+.win98-body .option-btn.correct .opt-label { background: #006000; color: #fff; }
+.win98-body .option-btn.wrong { background: #cc0000; color: #fff; border-color: #900000; }
+.win98-body .option-btn.wrong .opt-label { background: #900000; color: #fff; }
+.win98-body .photo-btn { border-radius: 0; border: 2px outset #c0c0c0; }
+.win98-body .photo-btn.correct { border-color: #008000; background: rgba(0,128,0,.15); }
+.win98-body .photo-btn.wrong { border-color: #cc0000; }
+.win98-body .photo-btn .photo-name { color: #000; }
+.win98-body .photo-btn .photo-subj { color: #444; }
+.win98-body .btn-next { border-radius: 0; border: 2px outset #c0c0c0; background: #c0c0c0; color: #000; }
+.win98-body .btn-next:hover { background: #000080; color: #fff; }
+.win98-body .progress-wrap { background: #808080; }
+.win98-body .progress-bar { background: #000080; }
+
 /* QUIZ HEADER */
-.quiz-header { width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:10px; }
+.quiz-header { width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; }
 .progress-wrap { flex:1; height:6px; background:rgba(255,255,255,.1); border-radius:99px; overflow:hidden; }
 .progress-bar { height:100%; background:linear-gradient(90deg,var(–red),var(–gold)); border-radius:99px; transition:width .5s ease; }
 .score-badge { background:rgba(201,168,76,.15); border:1px solid rgba(201,168,76,.35); border-radius:100px; padding:6px 14px; font-size:.85rem; color:var(–gold); font-weight:700; white-space:nowrap; }
@@ -183,24 +237,36 @@ flex-direction:column; gap:1px;
 <!-- QUIZ -->
 
 <div class="screen" id="quizScreen">
-  <div class="quiz-header">
-    <button class="btn-exit" onclick="exitQuiz()">✕ 退出</button>
-    <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:10%"></div></div>
-    <div class="timer-ring-wrap">
-      <svg width="50" height="50" viewBox="0 0 50 50">
-        <circle class="timer-track" cx="25" cy="25" r="21"/>
-        <circle class="timer-fill" id="timerRing" cx="25" cy="25" r="21" stroke-dasharray="131.9" stroke-dashoffset="0"/>
-      </svg>
-      <div class="timer-text" id="timerText">15</div>
+  <!-- Win98 window frame -->
+  <div class="win98-window">
+    <div class="win98-titlebar">
+      <span class="win98-title">🏫 波記知多少問答遊戲</span>
+      <div class="win98-btns">
+        <span class="win98-btn">─</span>
+        <span class="win98-btn">□</span>
+        <span class="win98-btn win98-close" onclick="exitQuiz()">✕</span>
+      </div>
     </div>
-    <div class="score-badge">分數 <span id="scoreDisplay">0</span></div>
+    <div class="win98-body">
+      <div class="quiz-header">
+        <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:10%"></div></div>
+        <div class="timer-ring-wrap">
+          <svg width="50" height="50" viewBox="0 0 50 50">
+            <circle class="timer-track" cx="25" cy="25" r="21"/>
+            <circle class="timer-fill" id="timerRing" cx="25" cy="25" r="21" stroke-dasharray="131.9" stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-text" id="timerText">15</div>
+        </div>
+        <div class="score-badge">分數 <span id="scoreDisplay">0</span></div>
+      </div>
+      <div class="question-card">
+        <div class="q-num" id="qNum">問題 01 / 10</div>
+        <div class="q-text" id="qText"></div>
+      </div>
+      <div id="optionsGrid"></div>
+      <button class="btn-next" id="btnNext" onclick="nextQuestion()">下一題 →</button>
+    </div>
   </div>
-  <div class="question-card">
-    <div class="q-num" id="qNum">問題 01 / 10</div>
-    <div class="q-text" id="qText"></div>
-  </div>
-  <div id="optionsGrid"></div>
-  <button class="btn-next" id="btnNext" onclick="nextQuestion()">下一題 →</button>
 </div>
 
 <!-- RESULT -->
@@ -237,14 +303,20 @@ flex-direction:column; gap:1px;
 
 <!-- EXIT MODAL -->
 
-<div id="exitModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center;">
-  <div style="background:#162040;border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:28px;text-align:center;max-width:300px;width:90%;">
-    <img src="quitwarn.png" alt="" style="width:110px;height:110px;object-fit:contain;margin-bottom:12px;">
-    <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px;">確定退出？</div>
-    <div style="font-size:.88rem;color:#8890b0;margin-bottom:20px;">現時分數將不會記錄</div>
-    <div style="display:flex;gap:12px;justify-content:center;">
-      <button onclick="confirmExit()" style="background:linear-gradient(135deg,#c0272d,#8b1a1e);color:#fff;border:none;border-radius:50px;padding:12px 28px;font-size:1rem;font-weight:700;font-family:'Noto Sans HK',sans-serif;cursor:pointer;">退出</button>
-      <button onclick="closeExitModal()" style="background:transparent;color:#8890b0;border:1.5px solid rgba(255,255,255,.15);border-radius:50px;padding:12px 28px;font-size:1rem;font-family:'Noto Sans HK',sans-serif;cursor:pointer;">繼續</button>
+<div id="exitModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;align-items:center;justify-content:center;">
+  <div style="background:#c0c0c0;border:2px solid #fff;border-right-color:#808080;border-bottom-color:#808080;box-shadow:2px 2px 0 #000;max-width:320px;width:90%;overflow:hidden;">
+    <div style="background:linear-gradient(90deg,#000080,#1084d0);padding:4px 8px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="color:#fff;font-size:.82rem;font-weight:700;font-family:'Noto Sans HK',sans-serif;">⚠️ 確定退出？</span>
+      <span onclick="closeExitModal()" style="background:#c0c0c0;border:1px solid #fff;border-right-color:#808080;border-bottom-color:#808080;width:22px;height:20px;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;">✕</span>
+    </div>
+    <div style="padding:20px 24px;text-align:center;">
+      <img src="quitwarn.png" alt="" style="width:180px;height:180px;object-fit:contain;margin-bottom:12px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.3));">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:4px;color:#000;">你係咪真係要走？</div>
+      <div style="font-size:.85rem;color:#444;margin-bottom:20px;">現時分數將不會記錄</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="confirmExit()" style="background:#c0c0c0;border:2px outset #c0c0c0;padding:6px 24px;font-size:.95rem;font-weight:700;font-family:'Noto Sans HK',sans-serif;cursor:pointer;min-width:80px;">退出</button>
+        <button onclick="closeExitModal()" style="background:#c0c0c0;border:2px outset #c0c0c0;padding:6px 24px;font-size:.95rem;font-weight:700;font-family:'Noto Sans HK',sans-serif;cursor:pointer;min-width:80px;">繼續</button>
+      </div>
     </div>
   </div>
 </div>
