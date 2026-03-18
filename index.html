@@ -171,19 +171,19 @@
   /* MASCOT POPUP */
   .mascot-popup {
     position: fixed;
-    bottom: -250px;
-    width: 140px;
-    height: 140px;
+    bottom: -300px;
+    width: 180px;
+    height: 180px;
     z-index: 999;
     pointer-events: none;
     transition: bottom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .mascot-popup.left  { left: 12px; }
-  .mascot-popup.right { right: 12px; }
-  .mascot-popup.show  { bottom: 25%; }
+  .mascot-popup.left  { left: 8px; }
+  .mascot-popup.right { right: 8px; }
+  .mascot-popup.show  { bottom: 22%; }
   .mascot-popup .mascot-circle {
-    width: 140px;
-    height: 140px;
+    width: 180px;
+    height: 180px;
     border-radius: 50%;
     overflow: hidden;
     background: #b8d4d8;
@@ -195,8 +195,35 @@
   }
   .mascot-popup img {
     width: 100%; height: 100%;
-    object-fit: cover; object-position: center;
+    object-fit: cover; object-position: center top;
     display: block; border-radius: 50%;
+  }
+
+  /* FEEDBACK MASCOT - centre screen */
+  .feedback-mascot {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 220px; height: 220px;
+    z-index: 150;
+    pointer-events: none;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #e8e8e8;
+    box-shadow: 0 0 0 6px rgba(255,255,255,0.3), 0 20px 60px rgba(0,0,0,0.5);
+    opacity: 0;
+  }
+  .feedback-mascot.show {
+    animation: feedbackMascotPop 1.5s ease forwards;
+  }
+  .feedback-mascot img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  @keyframes feedbackMascotPop {
+    0%   { transform: translate(-50%,-50%) scale(0);    opacity: 0; }
+    25%  { transform: translate(-50%,-50%) scale(1.15); opacity: 1; }
+    40%  { transform: translate(-50%,-50%) scale(0.95); opacity: 1; }
+    50%  { transform: translate(-50%,-50%) scale(1);    opacity: 1; }
+    80%  { transform: translate(-50%,-50%) scale(1);    opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(0);    opacity: 0; }
   }
 
   /* entrance animations */
@@ -300,6 +327,9 @@
   <div class="mascot-circle">
     <img src="pop01.gif" alt="吉祥物">
   </div>
+</div>
+<div class="feedback-mascot" id="feedbackMascot">
+  <img src="correct.gif" alt="答案" id="feedbackMascotImg">
 </div>
 
 <div class="feedback-overlay" id="feedbackOverlay"><div class="feedback-icon" id="feedbackIcon"></div></div>
@@ -753,21 +783,18 @@ function nextQuestion() {
 
 function showFeedback(ok) {
   const o = document.getElementById('feedbackOverlay');
-  document.getElementById('feedbackIcon').textContent = ok ? '✅' : '❌';
+  document.getElementById('feedbackIcon').textContent = '';
   o.className = 'feedback-overlay show';
   setTimeout(() => o.className = 'feedback-overlay', 800);
 
-  // show answer mascot
-  const mascot = document.getElementById('mascotPopup');
-  const img = mascot.querySelector('img');
-  img.src = ok ? 'correct.gif' : 'wrong.gif';
-  const anims = ['bounce','spin','zoom','wobble','flip','sling'];
-  const anim = anims[Math.floor(Math.random() * anims.length)];
-  mascot.className = 'mascot-popup';
-  void mascot.offsetWidth;
-  mascot.classList.add(Math.random() < 0.5 ? 'left' : 'right');
-  mascot.classList.add(`mascot-anim-${anim}`);
-  setTimeout(() => mascot.classList.add('show'), 20);
+  // centre feedback mascot
+  const fm = document.getElementById('feedbackMascot');
+  const fmImg = document.getElementById('feedbackMascotImg');
+  fmImg.src = ok ? 'correct.gif' : 'wrong.gif';
+  fm.className = 'feedback-mascot';
+  void fm.offsetWidth;
+  fm.className = 'feedback-mascot show';
+  setTimeout(() => fm.className = 'feedback-mascot', 1500);
 }
 
 function launchConfetti() {
