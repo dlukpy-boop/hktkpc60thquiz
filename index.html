@@ -39,15 +39,15 @@
   /* START */
   #startScreen { justify-content:center; align-items:center; padding:0; }
   #startScreen .btn-start {
-    position:fixed; bottom:12%; left:35%; transform:translateX(-50%);
+    position:fixed; bottom:8%; left:32%; transform:translateX(-50%);
     background:none; border:none; padding:0; cursor:pointer;
   }
-  #startScreen .btn-start img { width:130px; display:block; }
+  #startScreen .btn-start img { width:120px; height:120px; object-fit:contain; display:block; }
   #startScreen .btn-leaderboard {
-    position:fixed; bottom:12%; left:62%; transform:translateX(-50%);
+    position:fixed; bottom:8%; left:62%; transform:translateX(-50%);
     background:none; border:none; padding:0; cursor:pointer;
   }
-  #startScreen .btn-leaderboard img { width:130px; display:block; }
+  #startScreen .btn-leaderboard img { width:120px; height:120px; object-fit:contain; display:block; }
 
   /* WIN98 WINDOW */
   .win98-window {
@@ -220,22 +220,16 @@
 
   /* LEADERBOARD */
   #leaderboardScreen { overflow-y:auto; max-height:100vh; }
-  .lb-header { width:100%; display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
-  .lb-title { font-family:'Noto Serif HK',serif; font-size:1.5rem; font-weight:900; color:var(--gold); }
-  .btn-back { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:100px; padding:7px 18px; font-size:.85rem; color:var(--muted); font-family:'Noto Sans HK',sans-serif; cursor:pointer; transition:all .2s; }
-  .btn-back:hover { border-color:var(--gold); color:var(--gold); }
-  .lb-list { width:100%; display:flex; flex-direction:column; gap:9px; }
-  .lb-item { background:var(--card); border:1px solid rgba(255,255,255,.07); border-radius:13px; padding:13px 18px; display:flex; align-items:center; gap:14px; }
-  .lb-item.top1 { border-color:rgba(201,168,76,.5); background:rgba(201,168,76,.08); }
-  .lb-item.top2 { border-color:rgba(180,180,180,.4); }
-  .lb-item.top3 { border-color:rgba(180,100,40,.4); }
-  .lb-rank { font-size:1.3rem; width:34px; text-align:center; flex-shrink:0; }
-  .lb-name { flex:1; font-weight:700; }
-  .lb-score { font-family:'Noto Serif HK',serif; font-size:1.2rem; color:var(--gold); font-weight:900; }
-  .lb-date { font-size:.72rem; color:var(--muted); }
-  .lb-empty { color:var(--muted); text-align:center; padding:40px 0; }
-  .btn-clear { margin-top:18px; background:transparent; border:1px solid rgba(192,39,45,.3); border-radius:100px; padding:7px 22px; font-size:.8rem; color:rgba(192,39,45,.6); font-family:'Noto Sans HK',sans-serif; cursor:pointer; transition:all .2s; }
-  .btn-clear:hover { border-color:var(--red); color:var(--red); }
+  .lb-list { width:100%; display:flex; flex-direction:column; gap:4px; }
+  .lb-item { background:#fff; border:2px inset #808080; padding:10px 14px; display:flex; align-items:center; gap:14px; }
+  .lb-item.top1 { background:#fffde7; border-color:#c9a84c; }
+  .lb-item.top2 { background:#f5f5f5; }
+  .lb-item.top3 { background:#fff3e0; }
+  .lb-rank { font-size:1.2rem; width:32px; text-align:center; flex-shrink:0; }
+  .lb-name { flex:1; font-weight:700; color:#000; }
+  .lb-score { font-family:'Noto Serif HK',serif; font-size:1.1rem; color:#000080; font-weight:900; }
+  .lb-date { font-size:.72rem; color:#666; }
+  .lb-empty { color:#666; text-align:center; padding:40px 0; }
 </style>
 </head>
 <body>
@@ -341,12 +335,23 @@
 
 <!-- LEADERBOARD -->
 <div class="screen" id="leaderboardScreen">
-  <div class="lb-header">
-    <div class="lb-title">🏆 龍虎榜</div>
-    <button class="btn-back" onclick="showScreen('startScreen')">← 返回</button>
+  <div class="win98-window" style="width:100%;">
+    <div class="win98-titlebar">
+      <span class="win98-title">🏆 龍虎榜</span>
+      <div class="win98-btns">
+        <span class="win98-btn">─</span>
+        <span class="win98-btn">□</span>
+        <span class="win98-btn win98-close" onclick="showScreen('startScreen')">✕</span>
+      </div>
+    </div>
+    <div class="win98-body" style="padding:16px;">
+      <div class="lb-list" id="lbList"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:14px;">
+        <button onclick="showScreen('startScreen')" style="background:#c0c0c0;border:2px outset #c0c0c0;padding:6px 20px;font-family:'Noto Sans HK',sans-serif;font-size:.88rem;cursor:pointer;">← 返回</button>
+        <button onclick="clearScores()" style="background:#c0c0c0;border:2px outset #c0c0c0;padding:6px 20px;font-family:'Noto Sans HK',sans-serif;font-size:.88rem;cursor:pointer;color:#900000;">清除記錄</button>
+      </div>
+    </div>
   </div>
-  <div class="lb-list" id="lbList"></div>
-  <button class="btn-clear" onclick="clearScores()">清除所有記錄</button>
 </div>
 
 <!-- EXIT MODAL -->
