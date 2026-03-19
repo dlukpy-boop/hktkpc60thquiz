@@ -40,12 +40,12 @@
   /* START */
   #startScreen { justify-content:center; align-items:center; padding:0; }
   #startScreen .btn-start {
-    position:fixed; bottom:12%; left:32%; transform:translateX(-50%);
+    position:fixed; bottom:12%; left:30%; transform:translateX(-50%);
     background:none; border:none; padding:0; cursor:pointer;
   }
   #startScreen .btn-start img { width:180px; height:auto; display:block; }
   #startScreen .btn-leaderboard {
-    position:fixed; bottom:12%; left:68%; transform:translateX(-50%);
+    position:fixed; bottom:12%; left:55%; transform:translateX(-50%);
     background:none; border:none; padding:0; cursor:pointer;
   }
   #startScreen .btn-leaderboard img { width:180px; height:auto; display:block; }
@@ -192,8 +192,8 @@
     object-fit: contain;
     object-position: center;
     display: block;
-    -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, black 45%, transparent 70%);
-    mask-image: radial-gradient(ellipse 70% 70% at center, black 45%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 50%, black 30%, rgba(0,0,0,0.5) 55%, transparent 72%);
+    mask-image: radial-gradient(ellipse 60% 55% at 50% 50%, black 30%, rgba(0,0,0,0.5) 55%, transparent 72%);
   }
 
   /* FEEDBACK MASCOT - centre screen */
@@ -210,18 +210,18 @@
   .feedback-mascot img {
     width: 100%; height: 100%;
     object-fit: contain;
-    -webkit-mask-image: radial-gradient(ellipse 80% 80% at center, black 60%, transparent 82%);
-    mask-image: radial-gradient(ellipse 80% 80% at center, black 60%, transparent 82%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, black 40%, rgba(0,0,0,0.5) 62%, transparent 80%);
+    mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, black 40%, rgba(0,0,0,0.5) 62%, transparent 80%);
   }
   .feedback-mascot.show {
-    animation: feedbackMascotPop 1.5s ease forwards;
+    animation: feedbackMascotPop 2.5s ease forwards;
   }
   .feedback-mascot img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
   @keyframes feedbackMascotPop {
     0%   { transform: translate(-50%,-50%) scale(0);    opacity: 0; }
-    25%  { transform: translate(-50%,-50%) scale(1.15); opacity: 1; }
-    40%  { transform: translate(-50%,-50%) scale(0.95); opacity: 1; }
-    50%  { transform: translate(-50%,-50%) scale(1);    opacity: 1; }
+    15%  { transform: translate(-50%,-50%) scale(1.1);  opacity: 1; }
+    25%  { transform: translate(-50%,-50%) scale(0.97); opacity: 1; }
+    30%  { transform: translate(-50%,-50%) scale(1);    opacity: 1; }
     80%  { transform: translate(-50%,-50%) scale(1);    opacity: 1; }
     100% { transform: translate(-50%,-50%) scale(0);    opacity: 0; }
   }
@@ -794,7 +794,7 @@ function showFeedback(ok) {
   fm.className = 'feedback-mascot';
   void fm.offsetWidth;
   fm.className = 'feedback-mascot show';
-  setTimeout(() => fm.className = 'feedback-mascot', 1500);
+  setTimeout(() => fm.className = 'feedback-mascot', 2500);
 }
 
 function launchConfetti() {
