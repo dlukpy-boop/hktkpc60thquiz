@@ -50,6 +50,17 @@
   }
   #startScreen .btn-leaderboard img { width:180px; height:auto; display:block; }
 
+
+  /* PULSE animation for start button */
+  @keyframes pulse {
+    0%   { transform: translateX(-50%) scale(1); box-shadow: 0 6px 28px rgba(192,39,45,0.45); }
+    50%  { transform: translateX(-50%) scale(1.06); box-shadow: 0 8px 36px rgba(192,39,45,0.65); }
+    100% { transform: translateX(-50%) scale(1); box-shadow: 0 6px 28px rgba(192,39,45,0.45); }
+  }
+  #startScreen .btn-start {
+    animation: pulse 2s ease-in-out infinite;
+  }
+
   /* WIN98 WINDOW */
   .win98-window {
     width: 100%;
@@ -366,7 +377,7 @@
         <div class="q-text" id="qText"></div>
       </div>
       <div id="optionsGrid"></div>
-      <button class="btn-next" id="btnNext" onclick="nextQuestion()">下一題 →</button>
+      <button class="btn-next" id="btnNext" onclick="cancelPhotoTimer();nextQuestion()">下一題 →</button>
     </div>
   </div>
 </div>
@@ -393,6 +404,7 @@
         <!-- Right: score + name + buttons -->
         <div style="flex:1;display:flex;flex-direction:column;gap:10px;justify-content:center;">
           <div class="result-msg" id="resultMsg" style="font-size:1.2rem;font-weight:900;color:#000080;"></div>
+          <div id="resultCorrect" style="font-size:.85rem;color:#444;margin-top:2px;"></div>
           <div class="result-circle" style="width:100px;height:100px;margin:0;">
             <div class="result-score" id="resultScore" style="font-size:2rem;">0</div>
             <div class="result-total" id="resultTotal" style="font-size:.8rem;">/ 10 題</div>
@@ -506,7 +518,7 @@ const TIME_PER_Q = 15;
 const CIRCUMFERENCE = 131.9;
 const LEADERBOARD_KEY = 'pokey_quiz_scores';
 
-let currentQ = 0, score = 0, timer = null, timeLeft = TIME_PER_Q, answered = false;
+let currentQ = 0, score = 0, timer = null, timeLeft = TIME_PER_Q, answered = false, correctCount = 0;
 let gameQuestions = [], finalScore = 0;
 let isTeacherQ = false;
 
@@ -639,7 +651,7 @@ function showScreen(id) {
 }
 
 function startQuiz() {
-  currentQ = 0; score = 0;
+  currentQ = 0; score = 0; correctCount = 0;
   gameQuestions = pickQuestions();
   showScreen('quizScreen');
   loadQuestion();
@@ -736,7 +748,7 @@ function selectTextAnswer(idx, correctIdx) {
   btns[idx].classList.add(isCorrect ? 'correct' : 'wrong');
   if (!isCorrect) btns[firstCorrect].classList.add('correct');
   btns.forEach(b => b.disabled = true);
-  if (isCorrect) { score += Math.max(10, Math.round(timeLeft/TIME_PER_Q*50)+10); showFeedback(true); launchConfetti(); }
+  if (isCorrect) { score += Math.max(10, Math.round(timeLeft/TIME_PER_Q*50)+10); correctCount++; showFeedback(true); launchConfetti(); }
   else showFeedback(false);
   document.getElementById('scoreDisplay').textContent = score;
   // clear colours after brief flash
@@ -765,18 +777,19 @@ function selectPhotoAnswer(tid, q) {
     else btn.classList.add('revealed');
   });
 
-  if (isCorrect) { score += Math.max(10, Math.round(timeLeft/TIME_PER_Q*50)+10); showFeedback(true); launchConfetti(); }
+  if (isCorrect) { score += Math.max(10, Math.round(timeLeft/TIME_PER_Q*50)+10); correctCount++; showFeedback(true); launchConfetti(); }
   else showFeedback(false);
   document.getElementById('scoreDisplay').textContent = score;
 
-  // show next button, also auto-advance after feedback mascot finishes
+  // show next button + auto-advance, guard against double call
   document.getElementById('btnNext').style.display = 'block';
-  setTimeout(() => {
+  const photoTimer = setTimeout(() => {
     document.getElementById('btnNext').style.display = 'none';
     const grid = document.getElementById('optionsGrid');
-    grid.className = ''; grid.innerHTML = '';
+    if (grid) { grid.className = ''; grid.innerHTML = ''; }
     nextQuestion();
   }, 2500);
+  document.getElementById('btnNext')._photoTimer = photoTimer;
 }
 
 function startTimer() {
@@ -825,6 +838,11 @@ function timeUp() {
   showFeedback(false);
 }
 
+function cancelPhotoTimer() {
+  const btn = document.getElementById('btnNext');
+  if (btn._photoTimer) { clearTimeout(btn._photoTimer); btn._photoTimer = null; }
+}
+
 function nextQuestion() {
   document.getElementById('btnNext').style.display = 'none';
   const grid = document.getElementById('optionsGrid');
@@ -844,6 +862,9 @@ function showFeedback(ok) {
   const fm = document.getElementById('feedbackMascot');
   const fmImg = document.getElementById('feedbackMascotImg');
   fmImg.src = ok ? 'correct.png' : 'wrong.png';
+  fmImg.style.filter = ok 
+    ? 'drop-shadow(0 0 20px rgba(46,204,113,0.9)) drop-shadow(0 0 40px rgba(46,204,113,0.5))'
+    : 'drop-shadow(0 0 20px rgba(231,76,60,0.9)) drop-shadow(0 0 40px rgba(231,76,60,0.5))';
   fm.className = 'feedback-mascot';
   void fm.offsetWidth;
   fm.className = 'feedback-mascot show';
@@ -869,13 +890,14 @@ function showResult() {
   finalScore = score;
   document.getElementById('resultScore').textContent = score;
   document.getElementById('resultTotal').textContent = `/ ${QUESTIONS_PER_GAME} 題`;
+  document.getElementById('resultCorrect').textContent = `答對 ${correctCount} / ${QUESTIONS_PER_GAME} 題`;
   let msg, sub, img;
   if (score>=450)      { msg='🏆 波記達人！';    img='levelS.gif'; launchConfetti(); setTimeout(launchConfetti,700); }
   else if (score>=300) { msg='📚 波記資優生！';  img='levelA.gif'; }
   else if (score>=150) { msg='✏️ 波記新生！';    img='levelB.gif'; }
   else                  { msg='😅 波記仔留班了！'; img='levelC.gif'; }
   document.getElementById('resultMsg').textContent = msg;
-  document.getElementById('resultSub').textContent = '';
+  const subEl = document.getElementById('resultSub'); subEl.textContent = ''; subEl.style.display = 'none';
   const imgEl = document.getElementById('resultLevelImg');
   imgEl.src = img; imgEl.style.display = 'block';
   document.getElementById('nameInput').value = '';
@@ -903,10 +925,11 @@ function showLeaderboard() {
   if (!scores.length) { list.innerHTML='<div class="lb-empty">未有記錄，快來挑戰！</div>'; }
   else {
     const medals = ['🥇','🥈','🥉'];
+    const getGrade = sc => sc>=450 ? '🏆' : sc>=300 ? '📚' : sc>=150 ? '✏️' : '😅';
     scores.forEach((s,i) => {
       const div = document.createElement('div');
       div.className = `lb-item${i<3?' top'+(i+1):''}`;
-      div.innerHTML = `<div class="lb-rank">${medals[i]||(i+1)}</div><div class="lb-name">${s.name}</div><div style="text-align:right"><div class="lb-score">${s.score}</div><div class="lb-date">${s.date}</div></div>`;
+      div.innerHTML = `<div class="lb-rank">${medals[i]||(i+1)}</div><div class="lb-name">${s.name}</div><div style="text-align:right"><div class="lb-score">${getGrade(s.score)} ${s.score}</div><div class="lb-date">${s.date}</div></div>`;
       list.appendChild(div);
     });
   }
