@@ -408,6 +408,7 @@
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button onclick="saveScore()" style="background:#c0c0c0;color:#000;border:2px outset #c0c0c0;border-radius:0;padding:6px 14px;font-family:'Noto Sans HK',sans-serif;font-size:.88rem;cursor:pointer;font-weight:700;">✦ 記錄</button>
+            <button onclick="showLeaderboard()" style="background:#c0c0c0;color:#000080;border:2px outset #c0c0c0;border-radius:0;padding:6px 14px;font-family:'Noto Sans HK',sans-serif;font-size:.88rem;cursor:pointer;font-weight:700;">🏆 龍虎榜</button>
             <button onclick="restartQuiz()" style="background:#c0c0c0;color:#000;border:2px outset #c0c0c0;border-radius:0;padding:6px 14px;font-family:'Noto Sans HK',sans-serif;font-size:.88rem;cursor:pointer;">再玩</button>
             <button onclick="showScreen('startScreen')" style="background:#c0c0c0;border:2px outset #c0c0c0;color:#000;font-size:.88rem;font-family:'Noto Sans HK',sans-serif;cursor:pointer;padding:6px 14px;">首頁</button>
           </div>
@@ -752,9 +753,11 @@ function selectTextAnswer(idx, correctIdx) {
   // clear colours after brief flash
   setTimeout(() => {
     const grid = document.getElementById('optionsGrid');
-    grid.className = ''; grid.innerHTML = '';
+    if (grid) { grid.className = ''; grid.innerHTML = ''; }
   }, 400);
-  setTimeout(() => { nextQuestion(); }, 2000);
+  const _nqTimer = setTimeout(() => { nextQuestion(); }, 2000);
+  // store so confirmExit can cancel it
+  window._pendingNextQ = _nqTimer;
 }
 
 function selectPhotoAnswer(tid, q) {
@@ -892,6 +895,9 @@ function launchConfetti() {
 }
 
 function showResult() {
+  // hide any lingering mascots
+  document.getElementById('feedbackMascot').className = 'feedback-mascot';
+  document.getElementById('mascotPopup').className = 'mascot-popup';
   finalScore = score;
   document.getElementById('resultScore').textContent = score;
   document.getElementById('resultTotal').textContent = `/ ${QUESTIONS_PER_GAME} 題`;
@@ -949,7 +955,10 @@ function exitQuiz() { document.getElementById('exitModal').style.display='flex';
 function confirmExit() {
   closeExitModal();
   clearInterval(timer);
+  if (window._pendingNextQ) { clearTimeout(window._pendingNextQ); window._pendingNextQ = null; }
+  cancelPhotoTimer();
   document.getElementById('mascotPopup').className = 'mascot-popup';
+  document.getElementById('feedbackMascot').className = 'feedback-mascot';
   const grid = document.getElementById('optionsGrid');
   grid.className = ''; grid.innerHTML = '';
   showScreen('startScreen');
