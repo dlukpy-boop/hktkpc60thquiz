@@ -51,15 +51,6 @@
   #startScreen .btn-leaderboard img { width:180px; height:auto; display:block; }
 
 
-  /* PULSE animation for start button */
-  @keyframes pulse {
-    0%   { transform: translateX(-50%) scale(1); box-shadow: 0 6px 28px rgba(192,39,45,0.45); }
-    50%  { transform: translateX(-50%) scale(1.06); box-shadow: 0 8px 36px rgba(192,39,45,0.65); }
-    100% { transform: translateX(-50%) scale(1); box-shadow: 0 6px 28px rgba(192,39,45,0.45); }
-  }
-  #startScreen .btn-start {
-    animation: pulse 2s ease-in-out infinite;
-  }
 
   /* WIN98 WINDOW */
   .win98-window {
@@ -203,6 +194,8 @@
     object-fit: contain;
     object-position: center;
     display: block;
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, black 45%, transparent 70%);
+    mask-image: radial-gradient(ellipse 70% 70% at center, black 45%, transparent 70%);
   }
 
   /* FEEDBACK MASCOT - centre screen */
@@ -540,10 +533,11 @@ function generateTeacherQuestions(count) {
     const teacher = shuffledTeachers.find(t => !usedTeacherIds.has(t.id));
     if (!teacher) return null;
     const subj = teacher.subj[0];
-    const others = TEACHERS.filter(t => t.id !== teacher.id && !t.subj.includes(subj)).sort(() => Math.random() - 0.5).slice(0, 3);
+    const others = TEACHERS.filter(t => t.id !== teacher.id && !t.subj.includes(subj) && !usedTeacherIds.has(t.id)).sort(() => Math.random() - 0.5).slice(0, 3);
     if (others.length < 3) return null;
     const opts = [teacher, ...others].sort(() => Math.random() - 0.5);
     usedTeacherIds.add(teacher.id);
+    others.forEach(t => usedTeacherIds.add(t.id));
     return { type:'photo', teacherQ:true, q:`以下哪位老師係教${subj}科？`, opts, correctId:teacher.id };
   }
 
@@ -555,9 +549,11 @@ function generateTeacherQuestions(count) {
     const notTeaching = TEACHERS.filter(t => !t.subj.includes(subj) && !usedTeacherIds.has(t.id));
     if (teaching.length < 3 || notTeaching.length < 1) return null;
     const correct = notTeaching[Math.floor(Math.random() * notTeaching.length)];
-    const wrongs = teaching.sort(() => Math.random() - 0.5).slice(0, 3);
+    const wrongs = teaching.filter(t => !usedTeacherIds.has(t.id)).sort(() => Math.random() - 0.5).slice(0, 3);
+    if (wrongs.length < 3) return null;
     const opts = [correct, ...wrongs].sort(() => Math.random() - 0.5);
     usedTeacherIds.add(correct.id);
+    wrongs.forEach(t => usedTeacherIds.add(t.id));
     return { type:'photo', teacherQ:true, q:`以下哪位老師唔係教${subj}科？`, opts, correctId:correct.id };
   }
 
@@ -567,9 +563,11 @@ function generateTeacherQuestions(count) {
     const maleNonAlumni = TEACHERS.filter(t => !t.alumni && t.male);
     if (maleAlumni.length < 1 || maleNonAlumni.length < 3) return null;
     const correct = maleAlumni[Math.floor(Math.random() * maleAlumni.length)];
-    const wrongs = maleNonAlumni.sort(() => Math.random() - 0.5).slice(0, 3);
+    const wrongs = maleNonAlumni.filter(t => !usedTeacherIds.has(t.id)).sort(() => Math.random() - 0.5).slice(0, 3);
+    if (wrongs.length < 3) return null;
     const opts = [correct, ...wrongs].sort(() => Math.random() - 0.5);
     usedTeacherIds.add(correct.id);
+    wrongs.forEach(t => usedTeacherIds.add(t.id));
     return { type:'photo', teacherQ:true, q:'以下哪位老師係本校校友？', opts, correctId:correct.id };
   }
 
@@ -651,7 +649,7 @@ function showScreen(id) {
 }
 
 function startQuiz() {
-  currentQ = 0; score = 0; correctCount = 0;
+  currentQ = 0; score = 0; correctCount = 0; finalScore = 0;
   gameQuestions = pickQuestions();
   showScreen('quizScreen');
   loadQuestion();
@@ -823,6 +821,13 @@ function timeUp() {
       else btn.classList.add('revealed');
     });
     document.getElementById('btnNext').style.display = 'block';
+    const tuTimer = setTimeout(() => {
+      document.getElementById('btnNext').style.display = 'none';
+      const grid = document.getElementById('optionsGrid');
+      if (grid) { grid.className = ''; grid.innerHTML = ''; }
+      nextQuestion();
+    }, 2500);
+    document.getElementById('btnNext')._photoTimer = tuTimer;
   } else {
     const btns = document.querySelectorAll('.option-btn');
     btns.forEach(b => b.disabled = true);
