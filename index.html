@@ -196,20 +196,17 @@
   .mascot-popup .mascot-circle {
     width: 200px;
     height: 200px;
-    border-radius: 50%;
     background: #b8d4d8;
-    filter: drop-shadow(0 0 12px rgba(201,168,76,0.5)) drop-shadow(0 6px 20px rgba(0,0,0,0.5));
+    filter: drop-shadow(0 6px 20px rgba(0,0,0,0.5));
+    -webkit-mask-image: radial-gradient(circle, black 42%, rgba(0,0,0,0.7) 58%, rgba(0,0,0,0.2) 70%, transparent 80%);
+    mask-image: radial-gradient(circle, black 42%, rgba(0,0,0,0.7) 58%, rgba(0,0,0,0.2) 70%, transparent 80%);
   }
   .mascot-popup img {
     width: 140%;
     height: 140%;
     object-fit: contain;
-    object-position: center;
     display: block;
     margin: -20% 0 0 -20%;
-    border-radius: 50%;
-    -webkit-mask-image: radial-gradient(circle, black 40%, rgba(0,0,0,0.8) 55%, rgba(0,0,0,0.3) 68%, transparent 78%);
-    mask-image: radial-gradient(circle, black 40%, rgba(0,0,0,0.8) 55%, rgba(0,0,0,0.3) 68%, transparent 78%);
   }
 
   /* FEEDBACK MASCOT - centre screen */
