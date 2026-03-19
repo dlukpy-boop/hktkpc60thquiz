@@ -52,6 +52,16 @@
 
 
 
+  /* TOUCH BLOCKER */
+  #touchBlocker {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   /* WIN98 WINDOW */
   .win98-window {
     width: 100%;
@@ -89,8 +99,8 @@
   .win98-body .q-num { color: #000080; }
   .win98-body .q-text { color: #000; }
   .win98-body .score-badge { border-color: #808080; color: #000080; background: #fff; }
-  .win98-body .option-btn { background: #fff; border: 2px outset #c0c0c0; border-radius: 0; color: #000; }
-  .win98-body .option-btn:not(:disabled):hover { background: #000080; color: #fff; border-color: #000080; transform: none; }
+  .win98-body .option-btn { background: #fff; border: 2px outset #c0c0c0; border-radius: 0; color: #000; outline: none; -webkit-tap-highlight-color: transparent; }
+  @media (hover: hover) { .win98-body .option-btn:not(:disabled):hover { background: #000080; color: #fff; border-color: #000080; } }
   .win98-body .option-btn .opt-label { background: #c0c0c0; color: #000; border-radius: 0; }
   .win98-body .option-btn.correct { background: #008000; color: #fff; border-color: #006000; }
   .win98-body .option-btn.correct .opt-label { background: #006000; color: #fff; }
@@ -128,9 +138,9 @@
   /* TEXT OPTIONS */
   .options-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
   @media (max-width:480px) { .options-grid { grid-template-columns:1fr; } }
-  .option-btn { background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.1); border-radius:14px; padding:14px 16px; font-size:clamp(.88rem,2.2vw,.98rem); font-family:'Noto Sans HK',sans-serif; color:var(--text); cursor:pointer; text-align:left; transition:all .2s; display:flex; align-items:center; gap:10px; }
-  .option-btn:not(:disabled):hover { border-color:var(--gold); background:rgba(201,168,76,.08); transform:translateY(-2px); }
-  .option-btn:not(:disabled):active { transform:scale(.97); }
+  .option-btn { background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.1); border-radius:14px; padding:14px 16px; font-size:clamp(.88rem,2.2vw,.98rem); font-family:'Noto Sans HK',sans-serif; color:var(--text); cursor:pointer; text-align:left; display:flex; align-items:center; gap:10px; outline:none; -webkit-tap-highlight-color:transparent; }
+  @media (hover: hover) { .option-btn:not(:disabled):hover { border-color:var(--gold); background:rgba(201,168,76,.08); transform:translateY(-2px); } }
+  .option-btn:not(:disabled):active { transform:none; }
   .opt-label { width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:.8rem; flex-shrink:0; transition:all .2s; }
   .option-btn.correct { background:rgba(46,204,113,.15); border-color:var(--correct); }
   .option-btn.correct .opt-label { background:var(--correct); color:#fff; }
@@ -194,6 +204,7 @@
     object-fit: contain;
     object-position: center;
     display: block;
+    mix-blend-mode: lighten;
     -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, black 45%, transparent 70%);
     mask-image: radial-gradient(ellipse 70% 70% at center, black 45%, transparent 70%);
   }
@@ -315,6 +326,7 @@
 <body>
 
 <div id="gifBg" class="show"></div>
+<div id="touchBlocker"></div>
 <div id="darkBg"></div>
 <div class="bg-orb a" id="orbA"></div>
 <div class="bg-orb b" id="orbB"></div>
@@ -512,7 +524,7 @@ const TIME_PER_Q = 15;
 const CIRCUMFERENCE = 131.9;
 const LEADERBOARD_KEY = 'pokey_quiz_scores';
 
-let currentQ = 0, score = 0, timer = null, timeLeft = TIME_PER_Q, answered = false, correctCount = 0;
+let currentQ = 0, score = 0, timer = null, timeLeft = TIME_PER_Q, answered = false, correctCount = 0, generation = 0;
 let gameQuestions = [], finalScore = 0;
 let isTeacherQ = false;
 
@@ -658,9 +670,10 @@ function startQuiz() {
 
 function loadQuestion() {
   answered = false;
+  clearPendingTimers();
   document.getElementById('btnNext').style.display = 'none';
 
-  // fully reset grid
+  generation++;
   const oldGrid = document.getElementById('optionsGrid');
   const newGrid = document.createElement('div');
   newGrid.id = 'optionsGrid';
@@ -694,25 +707,29 @@ function loadQuestion() {
 
 function renderTextOptions(q) {
   let opts = q.options;
-  let correctIdx = q.answer;
 
   if (q.multiPool) {
     const correct = q.correctPool[Math.floor(Math.random()*q.correctPool.length)];
     const wrongs = [...q.wrongPool].sort(() => Math.random()-.5).slice(0,3);
     const all = [correct,...wrongs].sort(() => Math.random()-.5);
     q._options = all; q._correctIdx = all.indexOf(correct);
-    opts = all; correctIdx = q._correctIdx;
+    opts = all;
   }
 
   const grid = document.getElementById('optionsGrid');
   grid.className = 'options-grid';
   grid.innerHTML = '';
 
+  const myGen = generation;
   ['A','B','C','D'].forEach((lbl,i) => {
     const btn = document.createElement('button');
     btn.className = 'option-btn';
+    btn.type = 'button';
     btn.innerHTML = `<span class="opt-label">${lbl}</span><span>${opts[i]}</span>`;
-    btn.onclick = () => selectTextAnswer(i, Array.isArray(q.answer) ? q.answer : (q.multiPool ? q._correctIdx : q.answer));
+    btn.addEventListener('click', () => {
+      if (generation !== myGen) return;
+      selectTextAnswer(i, Array.isArray(q.answer) ? q.answer : (q.multiPool ? q._correctIdx : q.answer));
+    }, {once: true});
     grid.appendChild(btn);
   });
 }
@@ -744,13 +761,18 @@ function selectTextAnswer(idx, correctIdx) {
   document.getElementById('mascotPopup').className = 'mascot-popup';
   const isCorrect = Array.isArray(correctIdx) ? correctIdx.includes(idx) : idx === correctIdx;
   const firstCorrect = Array.isArray(correctIdx) ? correctIdx[0] : correctIdx;
-  const btns = document.querySelectorAll('.option-btn');
-  btns[idx].classList.add(isCorrect ? 'correct' : 'wrong');
-  if (!isCorrect) btns[firstCorrect].classList.add('correct');
-  btns.forEach(b => b.disabled = true);
-  if (isCorrect) { score += Math.max(10, Math.round(timeLeft/TIME_PER_Q*50)+10); correctCount++; showFeedback(true); launchConfetti(); }
-  else showFeedback(false);
+  const grid = document.getElementById('optionsGrid');
+  const btns = grid ? Array.from(grid.querySelectorAll('.option-btn')) : [];
+  btns.forEach((b,i) => {
+    b.disabled = true;
+    if (i === idx) b.classList.add(isCorrect ? 'correct' : 'wrong');
+    else if (!isCorrect && i === firstCorrect) b.classList.add('correct');
+  });
+  if (isCorrect) { score += Math.max(10, Math.round(timeLeft/TIME_PER_Q*50)+10); correctCount++; }
   document.getElementById('scoreDisplay').textContent = score;
+  showFeedback(isCorrect);
+  if (isCorrect) launchConfetti();
+  // keep colors showing, advance() will replace grid atomically
   window._pendingNextQ = setTimeout(advance, 1800);
 }
 
@@ -814,11 +836,11 @@ function timeUp() {
     document.getElementById('btnNext').style.display = 'block';
     window._pendingNextQ = setTimeout(advance, 2500);
   } else {
-    const btns = document.querySelectorAll('.option-btn');
-    btns.forEach(b => b.disabled = true);
-    const q = gameQuestions[currentQ];
-    const ci = q.multiPool ? q._correctIdx : (Array.isArray(q.answer) ? q.answer[0] : q.answer);
-    btns[ci]?.classList.add('correct');
+    const q2 = gameQuestions[currentQ];
+    const ci2 = q2.multiPool ? q2._correctIdx : (Array.isArray(q2.answer) ? q2.answer[0] : q2.answer);
+    const grid2 = document.getElementById('optionsGrid');
+    const btns2 = grid2 ? Array.from(grid2.querySelectorAll('.option-btn')) : [];
+    btns2.forEach((b,i) => { b.disabled = true; if(i===ci2) b.classList.add('correct'); });
     window._pendingNextQ = setTimeout(advance, 1800);
   }
   showFeedback(false);
@@ -830,17 +852,20 @@ function clearPendingTimers() {
 
 function cancelPhotoTimer() { clearPendingTimers(); }
 
-// Single advance function - wipes screen then moves on
+// Single advance function
 function advance() {
   window._pendingNextQ = null;
   document.getElementById('btnNext').style.display = 'none';
-  // wipe grid and question together
-  const grid = document.getElementById('optionsGrid');
-  if (grid) { grid.className = ''; grid.innerHTML = ''; }
-  document.getElementById('qText').textContent = '';
   currentQ++;
-  if (currentQ >= QUESTIONS_PER_GAME) showResult();
-  else loadQuestion();
+  if (currentQ >= QUESTIONS_PER_GAME) {
+    // clear before result
+    const grid = document.getElementById('optionsGrid');
+    if (grid) { grid.className = ''; grid.innerHTML = ''; }
+    showResult();
+  } else {
+    // force DOM flush before loading next question
+    requestAnimationFrame(() => requestAnimationFrame(() => loadQuestion()));
+  }
 }
 
 function nextQuestion() { advance(); }
@@ -897,7 +922,7 @@ function showResult() {
   else if (score>=150) { msg='✏️ 波記新生！';    img='levelB.gif'; }
   else                  { msg='😅 波記仔留班了！'; img='levelC.gif'; }
   document.getElementById('resultMsg').textContent = msg;
-  const subEl = document.getElementById('resultSub'); subEl.textContent = ''; subEl.style.display = 'none';
+  const subEl = document.getElementById('resultSub'); if (subEl) { subEl.textContent = ''; subEl.style.display = 'none'; }
   const imgEl = document.getElementById('resultLevelImg');
   imgEl.src = img; imgEl.style.display = 'block';
   document.getElementById('nameInput').value = '';
