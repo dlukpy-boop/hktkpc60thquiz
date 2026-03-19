@@ -740,6 +740,7 @@ function renderPhotoOptions(q) {
 function selectTextAnswer(idx, correctIdx) {
   if (answered) return;
   answered = true; clearInterval(timer);
+  clearPendingTimers();
   document.getElementById('mascotPopup').className = 'mascot-popup';
   const isCorrect = Array.isArray(correctIdx) ? correctIdx.includes(idx) : idx === correctIdx;
   const firstCorrect = Array.isArray(correctIdx) ? correctIdx[0] : correctIdx;
@@ -750,12 +751,7 @@ function selectTextAnswer(idx, correctIdx) {
   if (isCorrect) { score += Math.max(10, Math.round(timeLeft/TIME_PER_Q*50)+10); correctCount++; showFeedback(true); launchConfetti(); }
   else showFeedback(false);
   document.getElementById('scoreDisplay').textContent = score;
-  // hide question card + grid simultaneously after brief flash
-  window._pendingNextQ = setTimeout(() => {
-    document.getElementById('optionsGrid').innerHTML = '';
-    document.getElementById('qText').textContent = '';
-    nextQuestion();
-  }, 1800);
+  window._pendingNextQ = setTimeout(advance, 1800);
 }
 
 function selectPhotoAnswer(tid, q) {
@@ -782,13 +778,7 @@ function selectPhotoAnswer(tid, q) {
 
   // show next button + auto-advance
   document.getElementById('btnNext').style.display = 'block';
-  const photoTimer = setTimeout(() => {
-    document.getElementById('btnNext').style.display = 'none';
-    document.getElementById('optionsGrid').innerHTML = '';
-    document.getElementById('qText').textContent = '';
-    nextQuestion();
-  }, 2500);
-  document.getElementById('btnNext')._photoTimer = photoTimer;
+  window._pendingNextQ = setTimeout(advance, 2500);
 }
 
 function startTimer() {
@@ -822,41 +812,38 @@ function timeUp() {
       else btn.classList.add('revealed');
     });
     document.getElementById('btnNext').style.display = 'block';
-    const tuTimer = setTimeout(() => {
-      document.getElementById('btnNext').style.display = 'none';
-      const grid = document.getElementById('optionsGrid');
-      if (grid) { grid.className = ''; grid.innerHTML = ''; }
-      nextQuestion();
-    }, 2500);
-    document.getElementById('btnNext')._photoTimer = tuTimer;
+    window._pendingNextQ = setTimeout(advance, 2500);
   } else {
     const btns = document.querySelectorAll('.option-btn');
     btns.forEach(b => b.disabled = true);
     const q = gameQuestions[currentQ];
     const ci = q.multiPool ? q._correctIdx : (Array.isArray(q.answer) ? q.answer[0] : q.answer);
     btns[ci]?.classList.add('correct');
-    window._pendingNextQ = setTimeout(() => {
-      document.getElementById('optionsGrid').innerHTML = '';
-      document.getElementById('qText').textContent = '';
-      nextQuestion();
-    }, 1800);
+    window._pendingNextQ = setTimeout(advance, 1800);
   }
   showFeedback(false);
 }
 
-function cancelPhotoTimer() {
-  const btn = document.getElementById('btnNext');
-  if (btn._photoTimer) { clearTimeout(btn._photoTimer); btn._photoTimer = null; }
+function clearPendingTimers() {
+  if (window._pendingNextQ) { clearTimeout(window._pendingNextQ); window._pendingNextQ = null; }
 }
 
-function nextQuestion() {
+function cancelPhotoTimer() { clearPendingTimers(); }
+
+// Single advance function - wipes screen then moves on
+function advance() {
+  window._pendingNextQ = null;
   document.getElementById('btnNext').style.display = 'none';
+  // wipe grid and question together
   const grid = document.getElementById('optionsGrid');
   if (grid) { grid.className = ''; grid.innerHTML = ''; }
+  document.getElementById('qText').textContent = '';
   currentQ++;
   if (currentQ >= QUESTIONS_PER_GAME) showResult();
   else loadQuestion();
 }
+
+function nextQuestion() { advance(); }
 
 function showFeedback(ok) {
   const o = document.getElementById('feedbackOverlay');
@@ -874,7 +861,8 @@ function showFeedback(ok) {
   fm.className = 'feedback-mascot';
   void fm.offsetWidth;
   fm.className = 'feedback-mascot show';
-  setTimeout(() => fm.className = 'feedback-mascot', 2500);
+  if (window._feedbackTimer) clearTimeout(window._feedbackTimer);
+  window._feedbackTimer = setTimeout(() => fm.className = 'feedback-mascot', 2500);
 }
 
 function launchConfetti() {
@@ -893,7 +881,10 @@ function launchConfetti() {
 }
 
 function showResult() {
-  // hide any lingering mascots
+  // cancel ALL pending timers
+  clearPendingTimers();
+  if (window._feedbackTimer) { clearTimeout(window._feedbackTimer); window._feedbackTimer = null; }
+  // hide any lingering mascots immediately
   document.getElementById('feedbackMascot').className = 'feedback-mascot';
   document.getElementById('mascotPopup').className = 'mascot-popup';
   finalScore = score;
@@ -953,8 +944,7 @@ function exitQuiz() { document.getElementById('exitModal').style.display='flex';
 function confirmExit() {
   closeExitModal();
   clearInterval(timer);
-  if (window._pendingNextQ) { clearTimeout(window._pendingNextQ); window._pendingNextQ = null; }
-  cancelPhotoTimer();
+  clearPendingTimers();
   document.getElementById('mascotPopup').className = 'mascot-popup';
   document.getElementById('feedbackMascot').className = 'feedback-mascot';
   const grid = document.getElementById('optionsGrid');
