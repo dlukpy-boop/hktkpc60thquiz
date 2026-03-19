@@ -40,12 +40,12 @@
   /* START */
   #startScreen { justify-content:center; align-items:center; padding:0; }
   #startScreen .btn-start {
-    position:fixed; bottom:12%; left:30%; transform:translateX(-50%);
+    position:fixed; bottom:22%; left:30%; transform:translateX(-50%);
     background:none; border:none; padding:0; cursor:pointer;
   }
   #startScreen .btn-start img { width:180px; height:auto; display:block; }
   #startScreen .btn-leaderboard {
-    position:fixed; bottom:12%; left:55%; transform:translateX(-50%);
+    position:fixed; bottom:22%; left:55%; transform:translateX(-50%);
     background:none; border:none; padding:0; cursor:pointer;
   }
   #startScreen .btn-leaderboard img { width:180px; height:auto; display:block; }
@@ -522,16 +522,22 @@ function generateTeacherQuestions(count) {
   const qs = [];
   const types = ['subject','exclude','alumni'];
   const shuffledTeachers = [...TEACHERS].sort(() => Math.random() - 0.5);
-  const usedTypes = [...types].sort(() => Math.random() - 0.5);
+  const usedTeacherIds = new Set(); // track used teachers to avoid repeats
+
+  function getUnusedTeacher(pool) {
+    return pool.find(t => !usedTeacherIds.has(t.id));
+  }
 
   // subject: 教咩科→猜圖片
-  function makeSubjectQ(teacher) {
+  function makeSubjectQ() {
+    const teacher = shuffledTeachers.find(t => !usedTeacherIds.has(t.id));
+    if (!teacher) return null;
     const subj = teacher.subj[0];
-    const correct = teacher;
     const others = TEACHERS.filter(t => t.id !== teacher.id && !t.subj.includes(subj)).sort(() => Math.random() - 0.5).slice(0, 3);
     if (others.length < 3) return null;
-    const opts = [correct, ...others].sort(() => Math.random() - 0.5);
-    return { type:'photo', teacherQ:true, q:`以下哪位老師係教${subj}科？`, opts, correctId:correct.id };
+    const opts = [teacher, ...others].sort(() => Math.random() - 0.5);
+    usedTeacherIds.add(teacher.id);
+    return { type:'photo', teacherQ:true, q:`以下哪位老師係教${subj}科？`, opts, correctId:teacher.id };
   }
 
   // exclude: 邊位唔係教XX科
@@ -539,36 +545,37 @@ function generateTeacherQuestions(count) {
     const subjs = [...new Set(TEACHERS.flatMap(t => t.subj))];
     const subj = subjs[Math.floor(Math.random() * subjs.length)];
     const teaching = TEACHERS.filter(t => t.subj.includes(subj));
-    const notTeaching = TEACHERS.filter(t => !t.subj.includes(subj));
+    const notTeaching = TEACHERS.filter(t => !t.subj.includes(subj) && !usedTeacherIds.has(t.id));
     if (teaching.length < 3 || notTeaching.length < 1) return null;
     const correct = notTeaching[Math.floor(Math.random() * notTeaching.length)];
     const wrongs = teaching.sort(() => Math.random() - 0.5).slice(0, 3);
     const opts = [correct, ...wrongs].sort(() => Math.random() - 0.5);
+    usedTeacherIds.add(correct.id);
     return { type:'photo', teacherQ:true, q:`以下哪位老師唔係教${subj}科？`, opts, correctId:correct.id };
   }
 
   // alumni: 邊位係校友（只用男老師）
   function makeAlumniQ() {
-    const maleAlumni = TEACHERS.filter(t => t.alumni && t.male);
+    const maleAlumni = TEACHERS.filter(t => t.alumni && t.male && !usedTeacherIds.has(t.id));
     const maleNonAlumni = TEACHERS.filter(t => !t.alumni && t.male);
     if (maleAlumni.length < 1 || maleNonAlumni.length < 3) return null;
     const correct = maleAlumni[Math.floor(Math.random() * maleAlumni.length)];
     const wrongs = maleNonAlumni.sort(() => Math.random() - 0.5).slice(0, 3);
     const opts = [correct, ...wrongs].sort(() => Math.random() - 0.5);
+    usedTeacherIds.add(correct.id);
     return { type:'photo', teacherQ:true, q:'以下哪位老師係本校校友？', opts, correctId:correct.id };
   }
 
+  const typeOrder = [...types].sort(() => Math.random() - 0.5);
   let attempts = 0;
-  let tIdx = 0;
   while (qs.length < count && attempts < 30) {
     attempts++;
-    const typeIdx = qs.length % usedTypes.length;
-    const t = usedTypes[typeIdx];
+    const t = typeOrder[qs.length % typeOrder.length];
     let q = null;
-    if (t === 'subject') q = makeSubjectQ(shuffledTeachers[tIdx % shuffledTeachers.length]);
+    if (t === 'subject') q = makeSubjectQ();
     else if (t === 'exclude') q = makeExcludeQ();
     else if (t === 'alumni') q = makeAlumniQ();
-    if (q) { qs.push(q); tIdx++; }
+    if (q) qs.push(q);
   }
   return qs;
 }
@@ -696,7 +703,9 @@ function selectTextAnswer(idx, correctIdx) {
   else showFeedback(false);
   document.getElementById('scoreDisplay').textContent = score;
   setTimeout(() => {
-    btns.forEach(b => { b.classList.remove('correct','wrong'); b.className = 'option-btn'; });
+    // nuke grid immediately before loading next question
+    const grid = document.getElementById('optionsGrid');
+    grid.className = ''; grid.innerHTML = '';
     nextQuestion();
   }, 1500);
 }
@@ -765,7 +774,8 @@ function timeUp() {
     const ci = q.multiPool ? q._correctIdx : (Array.isArray(q.answer) ? q.answer[0] : q.answer);
     btns[ci]?.classList.add('correct');
     setTimeout(() => {
-      btns.forEach(b => { b.classList.remove('correct','wrong'); b.className = 'option-btn'; });
+      const grid = document.getElementById('optionsGrid');
+      grid.className = ''; grid.innerHTML = '';
       nextQuestion();
     }, 1500);
   }
