@@ -706,6 +706,7 @@ function loadQuestion() {
 
 function renderTextOptions(q) {
   let opts = q.options;
+  let correctIdx = Array.isArray(q.answer) ? q.answer : q.answer;
 
   if (q.multiPool) {
     const correct = q.correctPool[Math.floor(Math.random()*q.correctPool.length)];
@@ -713,6 +714,16 @@ function renderTextOptions(q) {
     const all = [correct,...wrongs].sort(() => Math.random()-.5);
     q._options = all; q._correctIdx = all.indexOf(correct);
     opts = all;
+  } else {
+    // shuffle options, track where correct answer(s) end up
+    const indices = [0,1,2,3].sort(() => Math.random() - 0.5);
+    const shuffledOpts = indices.map(i => opts[i]);
+    if (Array.isArray(q.answer)) {
+      q._shuffledCorrect = q.answer.map(a => indices.indexOf(a));
+    } else {
+      q._shuffledCorrect = indices.indexOf(q.answer);
+    }
+    opts = shuffledOpts;
   }
 
   const grid = document.getElementById('optionsGrid');
@@ -727,7 +738,8 @@ function renderTextOptions(q) {
     btn.innerHTML = `<span class="opt-label">${lbl}</span><span>${opts[i]}</span>`;
     btn.addEventListener('click', () => {
       if (generation !== myGen) return;
-      selectTextAnswer(i, Array.isArray(q.answer) ? q.answer : (q.multiPool ? q._correctIdx : q.answer));
+      const correctRef = q.multiPool ? q._correctIdx : q._shuffledCorrect;
+      selectTextAnswer(i, correctRef);
     }, {once: true});
     grid.appendChild(btn);
   });
@@ -834,7 +846,7 @@ function timeUp() {
     document.getElementById('btnNext').style.display = 'block';
   } else {
     const q2 = gameQuestions[currentQ];
-    const ci2 = q2.multiPool ? q2._correctIdx : (Array.isArray(q2.answer) ? q2.answer[0] : q2.answer);
+    const ci2 = q2.multiPool ? q2._correctIdx : (Array.isArray(q2._shuffledCorrect) ? q2._shuffledCorrect[0] : q2._shuffledCorrect);
     const grid2 = document.getElementById('optionsGrid');
     const btns2 = grid2 ? Array.from(grid2.querySelectorAll('.option-btn')) : [];
     btns2.forEach((b,i) => { b.disabled = true; if(i===ci2) b.classList.add('correct'); });
