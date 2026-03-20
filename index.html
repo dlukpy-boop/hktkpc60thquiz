@@ -533,7 +533,7 @@ let isTeacherQ = false;
 function generateTeacherQuestions(count) {
   const qs = [];
   const types = ['subject','exclude','alumni'];
-  const shuffledTeachers = [...TEACHERS].sort(() => Math.random() - 0.5);
+  const shuffledTeachers = shuffle([...TEACHERS]);
   const usedTeacherIds = new Set(); // track used teachers to avoid repeats
 
   function getUnusedTeacher(pool) {
@@ -547,7 +547,7 @@ function generateTeacherQuestions(count) {
     const subj = teacher.subj[0];
     const others = TEACHERS.filter(t => t.id !== teacher.id && !t.subj.includes(subj) && !usedTeacherIds.has(t.id)).sort(() => Math.random() - 0.5).slice(0, 3);
     if (others.length < 3) return null;
-    const opts = [teacher, ...others].sort(() => Math.random() - 0.5);
+    const opts = shuffle([teacher, ...others]);
     usedTeacherIds.add(teacher.id);
     others.forEach(t => usedTeacherIds.add(t.id));
     return { type:'photo', teacherQ:true, q:`以下哪位老師係教${subj}科？`, opts, correctId:teacher.id };
@@ -563,7 +563,7 @@ function generateTeacherQuestions(count) {
     const correct = notTeaching[Math.floor(Math.random() * notTeaching.length)];
     const wrongs = teaching.filter(t => !usedTeacherIds.has(t.id)).sort(() => Math.random() - 0.5).slice(0, 3);
     if (wrongs.length < 3) return null;
-    const opts = [correct, ...wrongs].sort(() => Math.random() - 0.5);
+    const opts = shuffle([correct, ...wrongs]);
     usedTeacherIds.add(correct.id);
     wrongs.forEach(t => usedTeacherIds.add(t.id));
     return { type:'photo', teacherQ:true, q:`以下哪位老師唔係教${subj}科？`, opts, correctId:correct.id };
@@ -577,13 +577,13 @@ function generateTeacherQuestions(count) {
     const correct = maleAlumni[Math.floor(Math.random() * maleAlumni.length)];
     const wrongs = maleNonAlumni.filter(t => !usedTeacherIds.has(t.id)).sort(() => Math.random() - 0.5).slice(0, 3);
     if (wrongs.length < 3) return null;
-    const opts = [correct, ...wrongs].sort(() => Math.random() - 0.5);
+    const opts = shuffle([correct, ...wrongs]);
     usedTeacherIds.add(correct.id);
     wrongs.forEach(t => usedTeacherIds.add(t.id));
     return { type:'photo', teacherQ:true, q:'以下哪位老師係本校校友？', opts, correctId:correct.id };
   }
 
-  const typeOrder = [...types].sort(() => Math.random() - 0.5);
+  const typeOrder = shuffle([...types]);
   let attempts = 0;
   while (qs.length < count && attempts < 30) {
     attempts++;
@@ -641,8 +641,8 @@ function pickQuestions() {
   const ruleQ  = RULES_QUESTIONS[Math.floor(Math.random() * RULES_QUESTIONS.length)];
   const annexQ = ANNIV_QUESTIONS[Math.floor(Math.random() * ANNIV_QUESTIONS.length)];
   const remaining = QUESTIONS_PER_GAME - teacherQs.length - 3;
-  const normalPool = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, remaining);
-  return [...teacherQs, songQ, ruleQ, annexQ, ...normalPool].sort(() => Math.random() - 0.5);
+  const normalPool = shuffle([...ALL_QUESTIONS]).slice(0, remaining);
+  return shuffle([...teacherQs, songQ, ruleQ, annexQ, ...normalPool]);
 }
 
 // ═══════════════════════════════════════════
@@ -704,19 +704,26 @@ function loadQuestion() {
   startTimer();
 }
 
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function renderTextOptions(q) {
   let opts = q.options;
-  let correctIdx = Array.isArray(q.answer) ? q.answer : q.answer;
 
   if (q.multiPool) {
     const correct = q.correctPool[Math.floor(Math.random()*q.correctPool.length)];
-    const wrongs = [...q.wrongPool].sort(() => Math.random()-.5).slice(0,3);
-    const all = [correct,...wrongs].sort(() => Math.random()-.5);
+    const wrongs = shuffle(q.wrongPool).slice(0,3);
+    const all = shuffle([correct,...wrongs]);
     q._options = all; q._correctIdx = all.indexOf(correct);
     opts = all;
   } else {
-    // shuffle options, track where correct answer(s) end up
-    const indices = [0,1,2,3].sort(() => Math.random() - 0.5);
+    const indices = shuffle([0,1,2,3]);
     const shuffledOpts = indices.map(i => opts[i]);
     if (Array.isArray(q.answer)) {
       q._shuffledCorrect = q.answer.map(a => indices.indexOf(a));
