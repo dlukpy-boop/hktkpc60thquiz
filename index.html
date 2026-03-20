@@ -797,9 +797,8 @@ function selectPhotoAnswer(tid, q) {
   else showFeedback(false);
   document.getElementById('scoreDisplay').textContent = score;
 
-  // show next button + auto-advance
+  // show next button only - player must click to advance
   document.getElementById('btnNext').style.display = 'block';
-  window._pendingNextQ = setTimeout(advance, 2500);
 }
 
 function startTimer() {
@@ -833,7 +832,6 @@ function timeUp() {
       else btn.classList.add('revealed');
     });
     document.getElementById('btnNext').style.display = 'block';
-    window._pendingNextQ = setTimeout(advance, 2500);
   } else {
     const q2 = gameQuestions[currentQ];
     const ci2 = q2.multiPool ? q2._correctIdx : (Array.isArray(q2.answer) ? q2.answer[0] : q2.answer);
